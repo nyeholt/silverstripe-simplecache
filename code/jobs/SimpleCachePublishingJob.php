@@ -10,11 +10,11 @@ class SimpleCachePublishingJob extends AbstractQueuedJob {
 		
 		if ($object) {
 			$collection = null;
-			if ($object instanceof DataObjectSet) {
+			if ($object instanceof DataList) {
 				$collection = $object;
 				$object = $object->First();
 			} else {
-				$collection = new DataObjectSet();
+				$collection = new ArrayList();
 				$collection->push($object);
 			}
 
