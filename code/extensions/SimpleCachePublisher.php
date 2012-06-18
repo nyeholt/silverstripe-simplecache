@@ -13,6 +13,7 @@ class SimpleCachePublisher extends FilesystemPublisher {
 	
 	public static $exclude_types = array(
 		'UserDefinedForm',
+		'SolrSearchPage',
 	);
 
 	public function __construct() {
@@ -78,6 +79,8 @@ class SimpleCachePublisher extends FilesystemPublisher {
 		$cache = $this->getCache();
 
 		foreach($urls as $url => $path) {
+			// work around bug introduced in ss3 whereby top level /bathroom.html would be changed to ./bathroom.html
+			$path = ltrim($path, './');
 			if(self::$static_base_url) Director::setBaseURL(self::$static_base_url);
 			$i++;
 
@@ -137,7 +140,7 @@ class SimpleCachePublisher extends FilesystemPublisher {
 				$data->Age = HTTP::get_cache_age();
 			}
 
-			if ($contentType) {
+			if (!empty($contentType)) {
 				$data->ContentType = $contentType;
 			}
 			$cache->store($key, $data);
@@ -153,7 +156,7 @@ class SimpleCachePublisher extends FilesystemPublisher {
 		if ($config->DisableSiteCache) {
 			return;
 		}
-		
+
 		$curBase = null;
 		$curHost = null;
 
@@ -285,7 +288,7 @@ class SimpleCachePublisher extends FilesystemPublisher {
 			}
 
 			$key = $keyPrefix . '/' . ltrim($path, '/');
-			if ($contentType) {
+			if (isset($contentType)) { // <-- TODO not sure what this is up to?
 				$data->ContentType = $contentType;
 			}
 			$cache->expire($key);

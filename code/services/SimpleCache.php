@@ -92,7 +92,7 @@ class SimpleCache {
 	 * 
 	 * @return SimpleCache
 	 */
-	public function get_cache($name='default', $store=null, $config = null) {
+	public static function get_cache($name='default', $store=null, $config = null) {
 		if (!isset(self::$instances[$name])) {
 			
 			if (isset(self::$cache_configs[$name]) && $conf = self::$cache_configs[$name]) {

@@ -10,6 +10,7 @@ class SimpleCacheAdmin extends LeftAndMain {
 	static $url_rule = '/$Action/$ID';
 	static $menu_title = 'Simple cache';
 	
+	
 	static $caches = array(
 		
 	);
@@ -21,9 +22,9 @@ class SimpleCacheAdmin extends LeftAndMain {
 		
 	}
 	
-	public function getEditForm() {
+	public function getEditForm($id = null, $fields = null) {
 		$tabs = new TabSet('Root', new Tab('Main'));
-		$fields = new FieldSet($tabs);
+		$fields = new FieldList($tabs);
 		$caches = array();
 		$all_caches = SimpleCache::$cache_configs;
 		
@@ -39,14 +40,14 @@ class SimpleCacheAdmin extends LeftAndMain {
 				$caches[$name] = $name;
 			}
 		}
-		
+
 		if (count($caches)) {
 			$fields->addFieldToTab('Root.Clear', new CheckboxSetField('ToClear', 'Caches to clear', $caches));
 		}
 		
-		$actions = new FieldSet(new FormAction('clear', 'Clear'));
+		$actions = new FieldList(new FormAction('clear', 'Clear'));
 		$form = new Form($this, 'EditForm', $fields, $actions);
-		
+		$form->addExtraClass('cms-edit-form cms-panel-padded center ' . $this->BaseCSSClasses());
 		return $form;
 	}
 	
