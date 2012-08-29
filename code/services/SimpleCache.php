@@ -95,6 +95,10 @@ class SimpleCache {
 	public function get_cache($name='default', $store=null, $config = null) {
 		if (!isset(self::$instances[$name])) {
 			
+			if (!isset(self::$cache_configs[$name])) {
+				$name = 'default';
+			}
+
 			if (isset(self::$cache_configs[$name]) && $conf = self::$cache_configs[$name]) {
 				$type = $conf['store_type'];
 				$storeOpts = $conf['store_options'];
@@ -178,6 +182,7 @@ class SimpleCache {
 		$entry = new SimpleCacheItem();
 
 		$entry->value = serialize($value);
+		$entry->stored = time();
 		if ($expiry) {
 			$entry->expireAt = time() + $expiry;
 		} else {
@@ -232,6 +237,24 @@ class SimpleCache {
 	}
 	
 	/**
+	 * Gets the raw item underneath a given key, so we can see things about expiry etc
+	 * @param type $key 
+	 */
+	public function getCacheEntry($key) {
+		$entry = null;
+		if (isset($this->items[$key])) {
+			$entry = $this->items[$key];
+		} else {
+			$data = $this->store->get($key);
+			if ($data) {
+				$entry = unserialize($data);
+			}
+		}
+
+		return $entry;
+	}
+	
+	/**
 	 * Delete from the cache
 	 *
 	 * @param mixed $key 
@@ -256,6 +279,15 @@ class SimpleCache {
 		$this->items = array();
 		$this->store->clear();
 	}
+	
+	/**
+	 * If underlying store access is needed; avoid using if possible! 
+	 * 
+	 * @return SimpleCacheStore
+	 */
+	public function getStore() {
+		return $this->store;
+	}
 }
 
 /**
@@ -268,6 +300,7 @@ class SimpleCacheItem {
 
 	public $value;
 	public $expireAt;
+	public $stored;
 
 }
 

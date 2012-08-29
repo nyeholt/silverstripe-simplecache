@@ -171,6 +171,10 @@ class SimpleMemcacheBasedCacheStore implements SimpleCacheStore {
 			return $cache['curr_items'];
 		}
 	}
+	
+	public function getUnderlyingCache() {
+		return $this->cache;
+	}
 }
 
 /**
@@ -226,6 +230,10 @@ class SimpleMemcachedBasedCacheStore implements SimpleCacheStore {
 		foreach ($stats as $server => $cache) {
 			return $cache['curr_items'];
 		}
+	}
+	
+	public function getUnderlyingCache() {
+		return $this->cache;
 	}
 }
 
