@@ -4,7 +4,7 @@
  * @author marcus@silverstripe.com.au
  * @license BSD License http://silverstripe.org/bsd-license/
  */
-class SimpleCachePublisher extends FilesystemPublisher {
+class SimpleCachePublisherExtension extends DataExtension {
 	
 	const CACHE_PUBLISH = '__cache_publish';
 	
