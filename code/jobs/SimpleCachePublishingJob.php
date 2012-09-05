@@ -6,8 +6,17 @@
  */
 class SimpleCachePublishingJob extends AbstractQueuedJob {
 	
-	public function __construct($object = null, $urls = null) {
 		
+	public static $dependencies = array(
+		'cachePublisher'			=> '%$SimpleCachePublisher',
+	);
+	
+	/**
+	 * @var SimpleCachePublisher
+	 */
+	public $cachePublisher;
+	
+	public function __construct($object = null, $urls = null) {
 		if ($object) {
 			$collection = null;
 			if ($object instanceof DataList) {
@@ -79,13 +88,10 @@ class SimpleCachePublishingJob extends AbstractQueuedJob {
 		}
 		$url = array_shift($urls);
 		
-		$object = $this->getObject();
-		if ($object) {
-			$stage = Versioned::current_stage();
-			Versioned::reading_stage('Live');
-			$object->publishPages(array($url));
-			Versioned::reading_stage($stage);
-		}
+		$stage = Versioned::current_stage();
+		Versioned::reading_stage('Live');
+		$this->cachePublisher->publishPages(array($url));
+		Versioned::reading_stage($stage);
 
 		$this->urls = $urls;
 		$this->currentStep++;
