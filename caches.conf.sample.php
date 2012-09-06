@@ -26,7 +26,7 @@ SimpleCache::$cache_configs = array(
  * for the given number of seconds
  */
 $cache_urls = array(
-        'custom-controller/view/\d+'      => 900,
+	'custom-controller/view/\d+'      => 900,
 );
 
 /**
