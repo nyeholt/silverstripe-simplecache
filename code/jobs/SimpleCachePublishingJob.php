@@ -5,8 +5,6 @@
  * @license BSD License http://silverstripe.org/bsd-license/
  */
 class SimpleCachePublishingJob extends AbstractQueuedJob {
-	
-		
 	public static $dependencies = array(
 		'cachePublisher'			=> '%$SimpleCachePublisher',
 	);

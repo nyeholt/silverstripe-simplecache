@@ -6,8 +6,6 @@
  */
 class SimpleCachePublisherExtension extends DataExtension {
 	
-	
-	
 	public static $exclude_types = array(
 		'UserDefinedForm',
 		'SolrSearchPage',

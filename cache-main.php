@@ -86,7 +86,7 @@ if (
 	// Find file by extension (either *.html or *.php)
 	$file = preg_replace('/[^a-zA-Z0-9\/\-_]/si', '-', $file);
 
-	$key = $remapped . '/' . $file . '.html';
+	$key = $remapped . '/' . $file;
 
 	$cache = get_cache('publisher');
 
@@ -129,7 +129,7 @@ if (
 			// No cache hit... fallback to dynamic routing
 			ob_start();
 			$GLOBALS['__cache_publish'] = true;
-			include dirname(__FILE__).'/../sapphire/main.php';
+			include dirname(__FILE__).'/../framework/main.php';
 			$toCache = new stdClass();
 			$toCache->Content = ob_get_clean();
 			$toCache->LastModified = date('Y-m-d H:i:s');
@@ -143,12 +143,12 @@ if (
 		} else {
 			header('X-SilverStripe-Cache: miss at '.@date('r') . ' on ' . $key);
 			// No cache allowed or wanted
-			include dirname(__FILE__).'/../sapphire/main.php';
+			include dirname(__FILE__).'/../framework/main.php';
 		}
 	}
 } else {
 	// Fall back to dynamic generation via normal routing if caching has been explicitly disabled
-	include dirname(__FILE__).'/../sapphire/main.php';
+	include dirname(__FILE__).'/../framework/main.php';
 }
 
 function get_cached_value($matches) {

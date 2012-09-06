@@ -15,6 +15,8 @@ class SimpleCachePublisher {
 	
 	protected $staticBaseUrl = null;
 	
+	protected $echoProgress = false;
+	
 	public function setStaticBaseUrl($value) {
 		$this->staticBaseUrl = $value;
 	}
@@ -55,9 +57,14 @@ class SimpleCachePublisher {
 		}
 
 		$currentBaseURL = Director::baseURL();
-		if($this->staticBaseUrl) Director::setBaseURL($this->staticBaseUrl);
+		if($this->staticBaseUrl) {
+			Director::setBaseURL($this->staticBaseUrl);
+		}
 		
-		if(StaticPublisher::echo_progress()) $this->out($this->class.": Publishing to " . $this->staticBaseUrl);		
+		if($this->echoProgress) {
+			$this->out($this->class.": Publishing to " . $this->staticBaseUrl);		
+		}
+
 		$files = array();
 		$i = 0;
 		$totalURLs = sizeof($urls);
@@ -67,7 +74,10 @@ class SimpleCachePublisher {
 		foreach($urls as $url => $path) {
 			// work around bug introduced in ss3 whereby top level /bathroom.html would be changed to ./bathroom.html
 			$path = ltrim($path, './');
-			if($this->staticBaseUrl) Director::setBaseURL($this->staticBaseUrl);
+			if($this->staticBaseUrl) {
+				Director::setBaseURL($this->staticBaseUrl);
+			}
+			
 			$i++;
 
 			if($url && !is_string($url)) {
@@ -82,8 +92,13 @@ class SimpleCachePublisher {
 
 			Requirements::clear();
 			
-			if($url == "") $url = "/";
-			if(Director::is_relative_url($url)) $url = Director::absoluteURL($url);
+			if($url == "") {
+				$url = "/";
+			}
+			
+			if(Director::is_relative_url($url)) {
+				$url = Director::absoluteURL($url);
+			}
 			$stage = Versioned::current_stage();
 			Versioned::reading_stage('Live');
 			
@@ -115,7 +130,7 @@ class SimpleCachePublisher {
 				$keyPrefix = $domain;
 			}
 
-			$key = $keyPrefix . '/' . ltrim($path, '/');
+			$key = $keyPrefix . '/' . trim($path, '/');
 			$data = new stdClass;
 			$data->Content = $content;
 			$data->LastModified = date('Y-m-d H:i:s');
@@ -132,7 +147,9 @@ class SimpleCachePublisher {
 			$cache->store($key, $data);
 		}
 
-		if($this->staticBaseUrl) Director::setBaseURL($currentBaseURL); 
+		if($this->staticBaseUrl) {
+			Director::setBaseURL($currentBaseURL); 
+		}
 		
 	}
 
