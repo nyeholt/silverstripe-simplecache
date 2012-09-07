@@ -122,7 +122,7 @@ if (
 		}
 
 		// check for any cached values
-		$content = preg_replace('|<base href="(https?)://(.*?)/"|', '<base href="$1://' . $_SERVER['HTTP_HOST'] . '/"', $object->Content);
+		$content = preg_replace('|<base href="(https?)://(.*?)/"|', '<base href="$1://' . $_SERVER['HTTP_HOST'] . BASE_URL . '/"', $object->Content);
 		echo preg_replace_callback('/<!--SimpleCache::(.*?)-->/', 'get_cached_value', $content);
 	} else {
 		if (isset($cache_urls) && $expiry = path_matches($host . $url, $cache_urls)) {
