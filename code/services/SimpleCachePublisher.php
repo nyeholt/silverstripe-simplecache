@@ -10,18 +10,44 @@ class SimpleCachePublisher {
 	
 	const CACHE_PUBLISH = '__cache_publish';
 	
-	public static $store_type = 'SimpleFileBasedCacheStore';
-	public static $store_options = array();
+	public static $exclude_types = array(
+		'UserDefinedForm',
+		'SolrSearchPage',
+	);
+
 	
 	protected $staticBaseUrl = null;
 	
 	protected $echoProgress = false;
 	
+	/**
+	 * Does the user need to "opt in" for caching pages?
+	 * 
+	 * If so, the page must have the CacheThis property set
+	 * 
+	 * If this is set to false (ie page cache always in effect) then the
+	 * user must have the "DontCache" property set to NOT cache the page
+	 * 
+	 * @var boolean
+	 */
+	protected $optInCaching = true;
+	
 	public function setStaticBaseUrl($value) {
 		$this->staticBaseUrl = $value;
 	}
 	
+	public function setOptInCaching($value) {
+		$this->optInCaching = $valule;
+	}
+	
+	public function getOptInCaching() {
+		return $this->optInCaching;
+	}
+	
 	public function publishDataObject(DataObject $object, $specificUrls = null) {
+		if ($this->dontCache($object)) {
+			return;
+		}
 		if (class_exists('AbstractQueuedJob')) {
 			// instead of republishing, we'll actually create a queued job
 			$job = new SimpleCachePublishingJob($object, $specificUrls);
@@ -34,6 +60,26 @@ class SimpleCachePublisher {
 			if (count($specificUrls)) {
 				$this->publishUrls($specificUrls);
 			}
+		}
+	}
+	
+	/**
+	 * Indicate whether we "don't" cache the given object
+	 * @param type $object
+	 * @return type 
+	 */
+	public function dontCache($object) {
+		$hierarchy = ClassInfo::ancestry($object->ClassName);
+		foreach (self::$exclude_types as $excluded) {
+			if (in_array($excluded, $hierarchy)) {
+				return true;
+			}
+		}
+
+		if ($this->optInCaching && !$object->CacheThis) {
+			return true;
+		} else if (!$this->optInCaching && $object->DontCacheThis) {
+			return true;
 		}
 	}
 	

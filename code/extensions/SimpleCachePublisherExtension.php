@@ -6,11 +6,11 @@
  */
 class SimpleCachePublisherExtension extends DataExtension {
 	
-	public static $exclude_types = array(
-		'UserDefinedForm',
-		'SolrSearchPage',
+	public static $db = array(
+		'CacheThis'			=> 'Boolean',
+		'DontCacheThis'		=> 'Boolean'
 	);
-	
+
 	public static $dependencies = array(
 		'cachePublisher'			=> '%$SimpleCachePublisher',
 	);
@@ -19,15 +19,22 @@ class SimpleCachePublisherExtension extends DataExtension {
 	 * @var SimpleCachePublisher
 	 */
 	public $cachePublisher;
+	
+	public function updateSettingsFields(FieldList $fields) {
+		if ($this->cachePublisher->getOptInCaching()) {
+			$fields->addFieldToTab('Root.Cache', new LiteralField('OptInHeader', _t('SimpleCache.OPT_IN', '<strong>You must choose to have this page cached on publish</strong>')));
+			$fields->addFieldToTab('Root.Cache', new CheckboxField('CacheThis', _t('SimpleCache.CACHE_THIS', 'Cache this item')));
+		} else {
+			$fields->addFieldToTab('Root.Cache', new LiteralField('OptInHeader', _t('SimpleCache.OPT_OUT', '<strong>You must choose to NOT cache this page</strong>')));
+			$fields->addFieldToTab('Root.Cache', new CheckboxField('DontCacheThis', _t('SimpleCache.DONT_CACHE_THIS', 'Do NOT cache this item')));
+		}
+	}
 
 	public function onAfterPublish($original) {
 		$this->republish($original);
 	}
 
 	public function republish($original) {
-		if (in_array($this->owner->ClassName, self::$exclude_types)) {
-			return;
-		}
 		if (SiteConfig::current_site_config()->DisableSiteCache) {
 			return;
 		}
