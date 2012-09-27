@@ -7,6 +7,9 @@ Marcus Nyeholt
 
 ## Documentation
 
+Note: SS 2.4 compatible version available in the ss24 branch. It does NOT
+have full capabilities as a replacement for static publisher
+
 [GitHub Wiki](http://wiki.github.com/nyeholt/silverstripe-simplecache)
 
 ## Licensing
