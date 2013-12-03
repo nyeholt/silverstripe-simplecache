@@ -14,7 +14,11 @@ class SimpleCachePublisher {
 		'UserDefinedForm',
 		'SolrSearchPage',
 	);
-
+	
+	/**
+	 * @var SimpleCache
+	 */
+	public $cache;
 	
 	protected $staticBaseUrl = null;
 	
@@ -37,13 +41,13 @@ class SimpleCachePublisher {
 	}
 	
 	public function setOptInCaching($value) {
-		$this->optInCaching = $valule;
+		$this->optInCaching = $value;
 	}
-	
+
 	public function getOptInCaching() {
 		return $this->optInCaching;
 	}
-	
+
 	public function publishDataObject(DataObject $object, $specificUrls = null) {
 		if ($this->dontCache($object)) {
 			return;
@@ -96,11 +100,7 @@ class SimpleCachePublisher {
 		// Set the appropriate theme for this publication batch.
 		// This may have been set explicitly via StaticPublisher::static_publisher_theme,
 		// or we can use the last non-null theme.
-		if(!StaticPublisher::static_publisher_theme()) {
-			SSViewer::set_theme(SSViewer::current_custom_theme());
-		} else {
-			SSViewer::set_theme(StaticPublisher::static_publisher_theme());
-		}
+		SSViewer::set_theme(SSViewer::current_custom_theme());
 
 		$currentBaseURL = Director::baseURL();
 		if($this->staticBaseUrl) {
@@ -129,11 +129,6 @@ class SimpleCachePublisher {
 			if($url && !is_string($url)) {
 				user_error("Bad url:" . var_export($url,true), E_USER_WARNING);
 				continue;
-			}
-
-			if(StaticPublisher::echo_progress()) {
-				$this->out(" * Publishing page $i/$totalURLs: $url");
-				flush();
 			}
 
 			Requirements::clear();
@@ -353,11 +348,9 @@ class SimpleCachePublisher {
 	}
 	
 	protected function getCache() {
-		$cache = SimpleCache::get_cache('publisher');
-		return $cache;
+		return $this->cache;
 	}
-	
-	
+
 	protected function out($message) {
 		if (Director::is_cli()) {
 			echo "$message \n";

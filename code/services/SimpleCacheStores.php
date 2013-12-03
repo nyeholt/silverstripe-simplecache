@@ -52,7 +52,7 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 			}
 		}
 		if (!is_dir($cacheLocation)) {
-			mkdir($cacheLocation, 0770, true);
+			mkdir($cacheLocation, 02770, true);
 		}
 		return $cacheLocation;
 	}
