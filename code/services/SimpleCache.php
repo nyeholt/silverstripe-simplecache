@@ -52,7 +52,7 @@ class SimpleCache {
 	/**
 	 * @var int
 	 */
-	private $expiry = 0;
+	public $expiry = 0;
 
 	/**
 	 * In memory object store
@@ -75,6 +75,8 @@ class SimpleCache {
 	 */
 	private $hits = 0;
 	private $misses = 0;
+	
+	public $recordStats = false;
 
 	/**
 	 * Get the instance
@@ -135,25 +137,26 @@ class SimpleCache {
 	public function configure($config) {
 		$this->expiry = isset($config['expiry']) ? $config['expiry'] : $this->expiry;
 	}
-	
+
 	/**
 	 * On shutdown, store hits and misses
 	 */
 	public function shutdown() {
-		if ($this->hits) {
-			$curr = $this->get(self::HIT_KEY);
-			$curr += $this->hits; // don't count the hit on hit_key!
-			$this->store(self::HIT_KEY, $curr);
-		}
-		
-		if ($this->misses) {
-			$curr = $this->get(self::MISS_KEY);
-			$curr += $this->misses;
-			$this->store(self::MISS_KEY, $curr);
+		if ($this->recordStats) {
+			if ($this->hits) {
+				$curr = $this->get(self::HIT_KEY);
+				$curr += $this->hits; // don't count the hit on hit_key!
+				$this->store(self::HIT_KEY, $curr);
+			}
+
+			if ($this->misses) {
+				$curr = $this->get(self::MISS_KEY);
+				$curr += $this->misses;
+				$this->store(self::MISS_KEY, $curr);
+			}
 		}
 	}
-	
-	
+
 	/**
 	 * Gets statistics about this cache 
 	 */

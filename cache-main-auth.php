@@ -23,7 +23,7 @@ if(isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
 }
 
 function auth() {
-	$realm = 'Metlink';
+	$realm = 'SilverStripe';
 	header('WWW-Authenticate: Basic realm="' . $realm . '"', true, 401);
 	exit();
 }

@@ -43,7 +43,7 @@ class SimpleCachePublishingJob extends AbstractQueuedJob {
 							$urls[$newUrl] = true;
 						}
 					} else {
-						$urls[$object->Link()] = true;
+						$urls[$object->AbsoluteLink()] = true;
 					}
 				}
 				
