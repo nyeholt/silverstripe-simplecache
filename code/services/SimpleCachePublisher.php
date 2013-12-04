@@ -52,15 +52,20 @@ class SimpleCachePublisher {
 		if ($this->dontCache($object)) {
 			return;
 		}
-		if (class_exists('AbstractQueuedJob')) {
+		if (class_exists('AbstractQueuedJob') && false) {
 			// instead of republishing, we'll actually create a queued job
 			$job = new SimpleCachePublishingJob($object, $specificUrls);
 			singleton('QueuedJobService')->queueJob($job);
 		} else {
 			
-			if (!$specificUrls && $object->hasMethod('pagesAffectedByChanges')) {
-				$specificUrls = $object->pagesAffectedByChanges();
+			if (!$specificUrls) {
+				if ($object->hasMethod('pagesAffectedByChanges')) {
+					$specificUrls = $object->pagesAffectedByChanges();
+				} else {
+					$specificUrls = array($object->AbsoluteLink());
+				}
 			}
+			
 			if (count($specificUrls)) {
 				$this->publishUrls($specificUrls);
 			}
@@ -88,20 +93,23 @@ class SimpleCachePublisher {
 	}
 	
 	protected function publishUrls($urls, $keyPrefix = '', $domain = null) {
+		$config = SiteConfig::current_site_config();
+
+		if ($config->DisableSiteCache) {
+			return;
+		}
+
 		// Do we need to map these?
 		// Detect a numerically indexed arrays
-		if (is_numeric(join('', array_keys($urls)))) $urls = $this->urlsToPaths($urls);
+		if (is_numeric(join('', array_keys($urls)))) {
+			$urls = $this->urlsToPaths($urls);
+		}
 		
 		// This can be quite memory hungry and time-consuming
 		// @todo - Make a more memory efficient publisher
 		increase_time_limit_to();
 		increase_memory_limit_to();
 		
-		// Set the appropriate theme for this publication batch.
-		// This may have been set explicitly via StaticPublisher::static_publisher_theme,
-		// or we can use the last non-null theme.
-		SSViewer::set_theme(SSViewer::current_custom_theme());
-
 		$currentBaseURL = Director::baseURL();
 		if($this->staticBaseUrl) {
 			Director::setBaseURL($this->staticBaseUrl);
@@ -120,10 +128,12 @@ class SimpleCachePublisher {
 		foreach($urls as $url => $path) {
 			// work around bug introduced in ss3 whereby top level /bathroom.html would be changed to ./bathroom.html
 			$path = ltrim($path, './');
+			$url = rtrim($url, '/');
+			
 			if($this->staticBaseUrl) {
 				Director::setBaseURL($this->staticBaseUrl);
 			}
-			
+
 			$i++;
 
 			if($url && !is_string($url)) {
@@ -133,10 +143,14 @@ class SimpleCachePublisher {
 
 			Requirements::clear();
 			
-			if($url == "") {
+			if (strrpos($url, '/home') == strlen($url) - 5) {
+				$url = substr($url, 0, strlen($url) - 5);
+			}
+
+			if($url == "" || $url == 'home') {
 				$url = "/";
 			}
-			
+
 			if(Director::is_relative_url($url)) {
 				$url = Director::absoluteURL($url);
 			}
@@ -144,7 +158,9 @@ class SimpleCachePublisher {
 			Versioned::reading_stage('Live');
 			
 			$GLOBALS[self::CACHE_PUBLISH] = 1;
+			Config::inst()->update('SSViewer', 'theme_enabled', true);
 			$response = Director::test(str_replace('+', ' ', $url));
+			Config::inst()->update('SSViewer', 'theme_enabled', false);
 			unset($GLOBALS[self::CACHE_PUBLISH]);
 			Versioned::reading_stage($stage);
 			
@@ -157,7 +173,7 @@ class SimpleCachePublisher {
 			if(is_object($response)) {
 				if($response->getStatusCode() == '301' || $response->getStatusCode() == '302') {
 					$absoluteURL = Director::absoluteURL($response->getHeader('Location'));
-					$content = "<meta http-equiv=\"refresh\" content=\"2; URL=$absoluteURL\">";
+					$content = null;
 				} else {
 					$content = $response->getBody();
 					$type = $response->getHeader('Content-type');
@@ -166,12 +182,25 @@ class SimpleCachePublisher {
 			} else {
 				$content = $response . '';
 			}
+
+			if (!$content) {
+				continue;
+			}
+			
+			$urlBits = @parse_url($url);
+			if (isset($urlBits['host'])) {
+				$domain = $urlBits['host'];
+			}
 			
 			if ($domain && !$keyPrefix) {
 				$keyPrefix = $domain;
 			}
 
-			$key = $keyPrefix . '/' . trim($path, '/');
+			$path = trim($path, '/');
+			if ($path == '' || $path == 'home') {
+				$path = 'index';
+			}
+			$key = $keyPrefix . '/' . $path;
 			$data = new stdClass;
 			$data->Content = $content;
 			$data->LastModified = date('Y-m-d H:i:s');
@@ -227,13 +256,8 @@ class SimpleCachePublisher {
 		}
 	}
 
-	function publishPages($urls) { 
-		$config = SiteConfig::current_site_config();
-
-		if ($config->DisableSiteCache) {
-			return;
-		}
-
+	public function publishPages($urls) { 
+		
 		$curBase = null;
 		$curHost = null;
 
@@ -341,7 +365,7 @@ class SimpleCachePublisher {
 //				$filename = $urlParts['host'] . '/' . $filename;
 //			}
 		
-			$mappedUrls[$url] = ((dirname($filename) == '/') ? '' :  (dirname($filename).'/')).basename($filename);
+			$mappedUrls[$url] = (dirname($filename) == '/') ? '' : $filename; //  (dirname($filename).'/')).basename($filename);
 		}
 
 		return $mappedUrls;

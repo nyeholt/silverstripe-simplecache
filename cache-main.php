@@ -18,12 +18,7 @@
 if(!defined('BASE_PATH')) {
 	// Assuming that this file is lower down in a module
 	define('BASE_PATH', rtrim(dirname(dirname(__FILE__)), DIRECTORY_SEPARATOR));
-	define('TEMP_FOLDER', BASE_PATH . '/silverstripe-cache');
 }
-
-// Optional settings for FilesystemPublisher::$domain_based_mapping=TRUE
-$hostmapLocation = BASE_PATH.'/subsites/host-map.php'; 
-$homepageMapLocation = BASE_PATH . '/assets/_homepage-map.php';
 
 if (file_exists(dirname(__FILE__) . '/cache-main.conf.php')) {
 	include_once(dirname(__FILE__) . '/cache-main.conf.php');
@@ -62,31 +57,14 @@ if (
 		$url = substr($url, strlen(BASE_URL));
 	}
 
-	// this is done because subsites doesn't handle www. very well at all :/
-	$host = str_replace('www.', '', $_SERVER['HTTP_HOST']);
+	$host = $_SERVER['HTTP_HOST'];
 	
-	if (file_exists($hostmapLocation)) {
-		include_once $hostmapLocation;
-		$subsiteHostmap['default'] = isset($subsiteHostmap['default']) ? $subsiteHostmap['default'] : '';
-		$remapped = trim((isset($subsiteHostmap[$host]) ? $subsiteHostmap[$host] .'/' : $subsiteHostmap['default']) . '', '/');
-	} else {
-		$remapped = '';
-	}
-
 	// Look for the file in the cachedir
 	$file = trim($url, '/');
+	// explicitly 'index' because the framework treats /home with magic
 	$file = $file ? $file : 'index';
 
-	// Route to the 'correct' index file (if applicable)
-	if ($file == 'index' && file_exists($homepageMapLocation)) {
-		include_once $homepageMapLocation;
-		$file = isset($homepageMap[$_SERVER['HTTP_HOST']]) ? $homepageMap[$_SERVER['HTTP_HOST']] : $file;
-	}
-
-	// Find file by extension (either *.html or *.php)
-	$file = preg_replace('/[^a-zA-Z0-9\/\-_]/si', '-', $file);
-
-	$key = $remapped . '/' . $file;
+	$key = $host . '/' . $file;
 
 	$cache = get_cache('publisher');
 
