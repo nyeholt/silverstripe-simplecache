@@ -168,6 +168,10 @@ class SimpleCache {
 		
 		return $stats;
 	}
+	
+	protected function tagKey($tag) {
+		return "__TAG__$tag";
+	}
 
 
 	/**
@@ -178,8 +182,8 @@ class SimpleCache {
 	 * @param int $expiry
 	 * 			How many seconds to cache this object for (no value uses the configured default)
 	 */
-	public function store($key, $value, $expiry=0) {
-		if (!$expiry) {
+	public function store($key, $value, $expiry = -1, $tags = null) {
+		if ($expiry == -1) {
 			$expiry = $this->expiry;
 		}
 		$entry = new SimpleCacheItem();
@@ -194,6 +198,21 @@ class SimpleCache {
 
 		$data = serialize($entry);
 		$this->store->store($key, $data);
+		
+		// if we've got tags, add this element to the list of keys stored for
+		// a given tag
+		if ($tags) {
+			foreach ($tags as $tag) {
+				$tagKey = $this->tagKey($tag);
+				$tagStore = $this->get($tagKey);
+				if (!$tagStore) {
+					$tagStore = array();
+				}
+				// we store the key in the map to prevent duplicated keys
+				$tagStore[$key] = true;
+				$this->store($tagKey, $tagStore, 0);
+			}
+		}
 
 		$this->items[$key] = $entry;
 	}
@@ -240,6 +259,34 @@ class SimpleCache {
 	}
 	
 	/**
+	 * Get a list of items by tag
+	 * 
+	 * @param string $tag
+	 * @return array
+	 */
+	public function getByTag($tag) {
+		$tagKey = $this->tagKey($tag);
+		$keys = $this->get($tagKey);
+		
+		$elems = array();
+		if ($keys) {
+			foreach ($keys as $key => $keyval) {
+				$elem = $this->get($key);
+				if (!$elem) {
+					unset($keys[$key]);
+				} else {
+					$elems[] = $elem;
+				}
+			}
+			
+			// re-save all the relevant keys
+			$this->store($tagKey, $keys, 0);
+		}
+
+		return $elems;
+	}
+	
+	/**
 	 * Gets the raw item underneath a given key, so we can see things about expiry etc
 	 * @param type $key 
 	 */
@@ -266,6 +313,24 @@ class SimpleCache {
 		unset($this->items[$key]);
 		$this->store->delete($key);
 	}
+	
+	/**
+	 * Clear out all elements with a particular tag
+	 *
+	 * @param string $tag
+	 */
+	public function deleteByTag($tag) {
+		$tagKey = $this->tagKey($tag);
+		$keys = $this->get($tagKey);
+		if ($keys) {
+			foreach ($keys as $key => $dummy) {
+				$this->delete($key);
+			}
+		}
+		
+		$this->delete($tagKey);
+	}
+
 	/**
 	 * Explicitly expire the given key
 	 * 

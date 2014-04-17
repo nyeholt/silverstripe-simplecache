@@ -11,14 +11,16 @@ class SimpleCachePublisherExtension extends DataExtension {
 		'DontCacheThis'		=> 'Boolean'
 	);
 
-	public static $dependencies = array(
-		'cachePublisher'			=> '%$SimpleCachePublisher',
-	);
-	
 	/**
 	 * @var SimpleCachePublisher
 	 */
 	public $cachePublisher;
+	
+	/**
+	 *
+	 * @var Injector
+	 */
+	public $injector;
 	
 	public function updateSettingsFields(FieldList $fields) {
 		if ($this->cachePublisher->getOptInCaching()) {
@@ -60,6 +62,10 @@ class SimpleCachePublisherExtension extends DataExtension {
 		} else {
 			$urls = array($this->owner->Link());
 		}
+		
+		array_walk($urls, function (&$entry) {
+			$entry = Director::absoluteURL($entry);
+		});
 
 		// immediately unpublish
 		$this->unpublishPages($urls);
@@ -76,19 +82,18 @@ class SimpleCachePublisherExtension extends DataExtension {
 
 	function unpublishPages($urls) {
 		$keyPrefix = null;
-		if ($this->owner->SubsiteID) {
-			$keyPrefix = $this->owner->Subsite()->getPrimaryDomain();
-		}
 		// we do the base one first
 		$this->cachePublisher->unpublishUrls($urls, $keyPrefix);
-
-		// okay we need to publish these pages for multiple urls, so do that 
-		// here
-		$allDomains = SiteConfig::current_site_config()->ForDomains->getValue();
-		if (is_array($allDomains)) {
-			foreach ($allDomains as $baseDomain) {
-				$this->cachePublisher->unpublishUrls($urls, $baseDomain);
-			}
-		}
+	}
+	
+	/**
+	 * Retrieve a cached fragment in the context of this page. 
+	 * 
+	 * @param string $name
+	 * @return string
+	 */
+	public function CachedFragment($name) {
+		$item = $this->injector->create('CachedFragment', $this->owner, $name);
+		return $item;
 	}
 }

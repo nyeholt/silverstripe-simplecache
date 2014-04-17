@@ -10,9 +10,10 @@ class SimpleCachePublisher {
 	
 	const CACHE_PUBLISH = '__cache_publish';
 	
-	public static $exclude_types = array(
+	public $excludeTypes = array(
 		'UserDefinedForm',
 		'SolrSearchPage',
+		'RedirectorPage',
 	);
 	
 	/**
@@ -36,6 +37,14 @@ class SimpleCachePublisher {
 	 */
 	protected $optInCaching = true;
 	
+	/**
+	 * Use queuedjobs for generating cached data?
+	 *
+	 * @var boolean
+	 */
+	public $useJobs = true;
+	
+	
 	public function setStaticBaseUrl($value) {
 		$this->staticBaseUrl = $value;
 	}
@@ -52,23 +61,31 @@ class SimpleCachePublisher {
 		if ($this->dontCache($object)) {
 			return;
 		}
-		if (class_exists('AbstractQueuedJob') && false) {
+		if ($this->useJobs && class_exists('AbstractQueuedJob')) {
 			// instead of republishing, we'll actually create a queued job
 			$job = new SimpleCachePublishingJob($object, $specificUrls);
 			singleton('QueuedJobService')->queueJob($job);
 		} else {
-			
 			if (!$specificUrls) {
+				$specificUrls = array();
 				if ($object->hasMethod('pagesAffectedByChanges')) {
-					$specificUrls = $object->pagesAffectedByChanges();
+					$pageUrls = $object->pagesAffectedByChanges();
+					foreach ($pageUrls as $url) {
+						if (Director::is_relative_url($url)) {
+							$url = Director::absoluteURL($url);
+						}
+						$pageUrls[] = $url;
+					}
 				} else {
 					$specificUrls = array($object->AbsoluteLink());
 				}
 			}
-			
+
 			if (count($specificUrls)) {
 				$this->publishUrls($specificUrls);
 			}
+
+			$this->recacheFragments($object);
 		}
 	}
 	
@@ -78,13 +95,22 @@ class SimpleCachePublisher {
 	 * @return type 
 	 */
 	public function dontCache($object) {
+		$nocache = $object->extend('canCache');
+		
+		if (count($nocache) && min($nocache) == 0) {
+			return true;
+		}
+		
+		if (method_exists($object, 'canCache') && !$object->canCache()) {
+			return true;
+		}
+		
 		$hierarchy = ClassInfo::ancestry($object->ClassName);
-		foreach (self::$exclude_types as $excluded) {
+		foreach ($this->excludeTypes as $excluded) {
 			if (in_array($excluded, $hierarchy)) {
 				return true;
 			}
 		}
-
 		if ($this->optInCaching && !$object->CacheThis) {
 			return true;
 		} else if (!$this->optInCaching && $object->DontCacheThis) {
@@ -93,11 +119,15 @@ class SimpleCachePublisher {
 	}
 	
 	protected function publishUrls($urls, $keyPrefix = '', $domain = null) {
+		global $PROXY_CACHE_HOSTMAP;
+		
 		$config = SiteConfig::current_site_config();
 
 		if ($config->DisableSiteCache) {
 			return;
 		}
+		
+		$urls = array_unique($urls);
 
 		// Do we need to map these?
 		// Detect a numerically indexed arrays
@@ -111,27 +141,31 @@ class SimpleCachePublisher {
 		increase_memory_limit_to();
 		
 		$currentBaseURL = Director::baseURL();
-		if($this->staticBaseUrl) {
-			Director::setBaseURL($this->staticBaseUrl);
-		}
 		
-		if($this->echoProgress) {
-			$this->out($this->class.": Publishing to " . $this->staticBaseUrl);		
-		}
-
 		$files = array();
 		$i = 0;
 		$totalURLs = sizeof($urls);
 
 		$cache = $this->getCache();
+		
+		if (!defined('PROXY_CACHE_GENERATING')) {
+			define('PROXY_CACHE_GENERATING', true);
+		}
 
 		foreach($urls as $url => $path) {
 			// work around bug introduced in ss3 whereby top level /bathroom.html would be changed to ./bathroom.html
 			$path = ltrim($path, './');
 			$url = rtrim($url, '/');
 			
-			if($this->staticBaseUrl) {
-				Director::setBaseURL($this->staticBaseUrl);
+			// TODO: Detect the scheme + host URL from the URL's absolute path
+			// and set that as the base URL appropriately
+			$baseUrlSrc = $this->staticBaseUrl ? $this->staticBaseUrl : $url;
+			$urlBits = parse_url($baseUrlSrc);
+			
+			if (isset($urlBits['scheme']) && isset($urlBits['host'])) {
+				// now see if there's a host mapping
+				// we want to set the base URL correctly
+				Config::inst()->update('Director', 'alternate_base_url', $urlBits['scheme'] . '://' . $urlBits['host'] . '/');
 			}
 
 			$i++;
@@ -156,14 +190,16 @@ class SimpleCachePublisher {
 			}
 			$stage = Versioned::current_stage();
 			Versioned::reading_stage('Live');
-			
 			$GLOBALS[self::CACHE_PUBLISH] = 1;
 			Config::inst()->update('SSViewer', 'theme_enabled', true);
+			if (class_exists('Multisites')) {
+				Multisites::inst()->resetCurrentSite();
+			}
 			$response = Director::test(str_replace('+', ' ', $url));
 			Config::inst()->update('SSViewer', 'theme_enabled', false);
 			unset($GLOBALS[self::CACHE_PUBLISH]);
 			Versioned::reading_stage($stage);
-			
+
 			Requirements::clear();
 
 			singleton('DataObject')->flushCache();
@@ -187,7 +223,6 @@ class SimpleCachePublisher {
 				continue;
 			}
 			
-			$urlBits = @parse_url($url);
 			if (isset($urlBits['host'])) {
 				$domain = $urlBits['host'];
 			}
@@ -197,10 +232,10 @@ class SimpleCachePublisher {
 			}
 
 			$path = trim($path, '/');
-			if ($path == '' || $path == 'home') {
-				$path = 'index';
+			if ($path == 'home') {
+				$path = '';
 			}
-			$key = $keyPrefix . '/' . $path;
+			
 			$data = new stdClass;
 			$data->Content = $content;
 			$data->LastModified = date('Y-m-d H:i:s');
@@ -214,13 +249,48 @@ class SimpleCachePublisher {
 			if (!empty($contentType)) {
 				$data->ContentType = $contentType;
 			}
+			
+			$key = $keyPrefix . '/' . $path;
 			$cache->store($key, $data);
+			
+			if ($domain && isset($PROXY_CACHE_HOSTMAP) && isset($PROXY_CACHE_HOSTMAP[$domain])) {
+				$hosts = $PROXY_CACHE_HOSTMAP[$domain];
+				foreach ($hosts as $otherDomain) {
+					$key = $otherDomain .'/' . $path;
+					$storeData = str_replace($domain, $otherDomain, $data);
+					$cache->store($key, $storeData);
+				}
+			}
 		}
 
-		if($this->staticBaseUrl) {
-			Director::setBaseURL($currentBaseURL); 
+		Director::setBaseURL($currentBaseURL); 
+	}
+	
+	/**
+	 * Recache fragments of a data object
+	 * 
+	 * @param DataObject $object
+	 */
+	public function recacheFragments($object) {
+		$current = Config::inst()->get('SSViewer', 'theme_enabled');
+		if (!$current) {
+			Config::inst()->update('SSViewer', 'theme_enabled', true);
 		}
 		
+		if (method_exists($object, 'cacheFragments')) {
+			$fragments = $object->cacheFragments();
+			$regenContext = method_exists($object, 'regenerationContext') ? $object->regenerationContext() : $object;
+			$current = Versioned::current_stage();
+			Versioned::reading_stage('Live');
+			foreach ($fragments as $fragment) {
+				$item = Injector::inst()->create('CachedFragment', $regenContext, $fragment);
+				$item->regenerate();
+			}
+			Versioned::reading_stage($current);
+		}
+		if (!$current) {
+			Config::inst()->update('SSViewer', 'theme_enabled', false);
+		}
 	}
 
 	/**
@@ -233,8 +303,8 @@ class SimpleCachePublisher {
 	 *				subsite's primary domain, but may be something more complex if publishing the same content for
 	 *				multiple domains
 	 */
-	function unpublishUrls($urls, $keyPrefix = '') {
-		
+	function unpublishUrls($urls) {
+		global $PROXY_CACHE_HOSTMAP;
 		// Do we need to map these?
 		// Detect a numerically indexed arrays
 		if (is_numeric(join('', array_keys($urls)))) {
@@ -245,72 +315,32 @@ class SimpleCachePublisher {
 		// @todo - Make a more memory efficient publisher
 		increase_time_limit_to();
 		increase_memory_limit_to();
-		
+
 		$cache = $this->getCache();
 		foreach($urls as $url => $path) {
-			$key = $keyPrefix . '/' . ltrim($path, '/');
-			if (isset($contentType)) { // <-- TODO not sure what this is up to?
-				$data->ContentType = $contentType;
+			$baseUrlSrc = $this->staticBaseUrl ? $this->staticBaseUrl : $url;
+			$urlBits = parse_url($baseUrlSrc);
+			if (!isset($urlBits['host'])) {
+				$urlBits = parse_url(Director::absoluteBaseURL());
 			}
+
+			$domain = isset($urlBits['host']) ? $urlBits['host'] : (isset($_SERVER['HOST_NAME']) ? $_SERVER['HOST_NAME'] : '');
+			$key = $domain . '/' . ltrim($path, '/');
 			$cache->expire($key);
+			
+			if ($domain && isset($PROXY_CACHE_HOSTMAP) && isset($PROXY_CACHE_HOSTMAP[$domain])) {
+				$hosts = $PROXY_CACHE_HOSTMAP[$domain];
+				foreach ($hosts as $otherDomain) {
+					$key = $otherDomain . '/' . ltrim($path, '/');
+					$cache->expire($key);
+				}
+			}
 		}
 	}
 
 	public function publishPages($urls) { 
-		
-		$curBase = null;
-		$curHost = null;
-
-		if (strlen($config->CacheBaseUrl)) {
-			$curBase = $this->staticBaseUrl;
-			$baseUrl = Director::baseURL();
-			if (!strlen($baseUrl)) {
-				$baseUrl = '/';
-			}
-
-			if (strpos($baseUrl, '://')) {
-				$this->staticBaseUrl = Director::protocol() . $config->CacheBaseUrl .'/';
-			} else {
-				$this->staticBaseUrl = Director::protocol() . $config->CacheBaseUrl . $baseUrl;
-			}
-
-			$curHost = $_SERVER['HTTP_HOST'];
-			$_SERVER['HTTP_HOST'] = $config->CacheBaseUrl;
-		}
-		
 		// we do the base URL first
 		$this->publishUrls($urls);
-
-		if ($curBase) {
-			$this->staticBaseUrl = $curBase;
-			$_SERVER['HTTP_HOST'] = $curHost;
-		}
-
-		// okay we need to publish these pages for multiple urls, so do that 
-		// here
-		if ($config->ForDomains && is_array($config->ForDomains->getValue())) {
-			$allDomains = $config->ForDomains->getValue();
-			foreach ($allDomains as $baseDomain) {
-				$oldBaseURL = $this->staticBaseUrl;
-				$oldHost = $_SERVER['HTTP_HOST'];
-				$_SERVER['HTTP_HOST'] = $baseDomain;
-
-				$baseUrl = Director::baseURL();
-				if (!strlen($baseUrl)) {
-					$baseUrl = '/';
-				}
-
-				if (strpos($baseUrl, '://')) {
-					$this->staticBaseUrl = Director::protocol() . $baseDomain .'/';
-				} else {
-					$this->staticBaseUrl = Director::protocol() . $baseDomain . $baseUrl;
-				}
-
-				$this->publishUrls($urls, $baseDomain);
-				$this->staticBaseUrl = $oldBaseURL;
-				$_SERVER['HTTP_HOST'] = $oldHost;
-			}
-		}
 	}
 	
 	/**

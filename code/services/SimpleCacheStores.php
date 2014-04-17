@@ -58,7 +58,8 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 	}
 
 	private function getDiskLocation($key, $create = true) {
-		$name = md5($key);
+		$friendly = preg_replace('/[^A-Z0-9_-]+/i', '_', $key);
+		$name = md5($key) . $friendly;
 		$dir = $this->getCacheLocation() . '/' . mb_substr($name, 0, 3);
 		if (!is_dir($dir) && $create) {
 			mkdir($dir, 0770, true);

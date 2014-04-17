@@ -1,0 +1,53 @@
+---
+Name: simplecache_config
+---
+Injector:
+  SimpleCachePublisherExtension:
+    properties:
+      cachePublisher: %$SimpleCachePublisher
+      injector: %$Injector
+  FragmentCacheStore:
+    class: SimpleFileBasedCacheStore
+    constructor:
+      - silverstripe-cache/fragment_cache
+  # Make sure your PROXY_CONFIG file declares a cache called FragmentCache that
+  # maps to the same location as defined here!
+  FragmentCache:
+    class: SimpleCache
+    constructor:
+      - %$FragmentCacheStore
+    properties:
+      # ten day expiry for cached fragments (ie something else will clear them)
+      expiry: 864000
+  CachedFragment:
+    type: prototype
+    properties:
+      cache: %$FragmentCache
+  SimpleCachePublisher:
+    properties:
+      cache: %$PublisherCache
+# The following two caches should be mapped in your cache-config the same way as defined
+# below
+  PublisherCacheStore:
+    class: SimpleFileBasedCacheStore
+    constructor:
+      - publisher_cache
+  PublisherCache:
+    class: SimpleCache
+    constructor:
+      - %$PublisherCacheStore
+    properties:
+      # ten day expiry for cache
+      expiry: 864000
+  DynamicPublisherCacheStore:
+    class: SimpleFileBasedCacheStore
+    constructor:
+      - silverstripe-cache/dynamic_publisher
+  DynamicPublisherCache:
+    class: SimpleCache
+    constructor:
+      - %$DynamicPublisherCacheStore
+    properties:
+      # default for 1 day expiry
+      expiry: 86400
+

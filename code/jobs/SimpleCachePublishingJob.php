@@ -38,8 +38,9 @@ class SimpleCachePublishingJob extends AbstractQueuedJob {
 					}
 
 					if($object->hasMethod('pagesAffectedByChanges')) {
-						$affected = $object->pagesAffectedByChanges($original);
+						$affected = $object->pagesAffectedByChanges(null);
 						foreach ($affected as $newUrl) {
+							$newUrl = Director::absoluteURL($newUrl);
 							$urls[$newUrl] = true;
 						}
 					} else {
@@ -50,11 +51,11 @@ class SimpleCachePublishingJob extends AbstractQueuedJob {
 				if (count($urls)) {
 					$urls = array_keys($urls);
 				}
-				Versioned::set_reading_mode($stage);
+				Versioned::reading_stage($stage);
 			}
 
-			$this->urls = $urls;
-			$this->totalSteps = count($urls);
+			$this->urls = array_unique($urls);
+			$this->totalSteps = count($this->urls);
 		}
 	}
 	
@@ -73,6 +74,14 @@ class SimpleCachePublishingJob extends AbstractQueuedJob {
 			return QueuedJob::QUEUED;
 		} else {
 			return QueuedJob::LARGE;
+		}
+	}
+	
+	public function setup() {
+		parent::setup();
+		$obj = $this->getObject();
+		if ($obj) {
+			$this->cachePublisher->recacheFragments($obj);	
 		}
 	}
 

@@ -7,9 +7,6 @@ Marcus Nyeholt
 
 ## Documentation
 
-Note: SS 2.4 compatible version available in the ss24 branch. It does NOT
-have full capabilities as a replacement for static publisher
-
 [GitHub Wiki](http://wiki.github.com/nyeholt/silverstripe-simplecache)
 
 ## Licensing
@@ -24,10 +21,10 @@ This module is licensed under the BSD license
 
 * Add the SimpleCachePublisher extension to a publishable data type and publish
   your page. 
-* Change .htaccess to point to simplecache/cache-main.php instead of 
-  sapphire/main.php
-* Works in much the same way as static publisher, but uses a cache abstraction
+* Change .htaccess to point to simplecache/frontend-cache.php instead of 
+  framework/main.php
+* Works in a similar way to static publisher, but uses a cache abstraction
   layer to allow for storing cached data in memcache or apc, or other cache
-  platform. Uses a filesystem cache by default
+  platform.
 
 
