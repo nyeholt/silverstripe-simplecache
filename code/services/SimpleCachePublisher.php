@@ -119,7 +119,9 @@ class SimpleCachePublisher {
 	}
 	
 	protected function publishUrls($urls, $keyPrefix = '', $domain = null) {
-		global $PROXY_CACHE_HOSTMAP;
+		if (defined('PROXY_CONFIG_FILE') && !isset($PROXY_CACHE_HOSTMAP)) {
+			include_once BASE_PATH . '/' . PROXY_CONFIG_FILE;
+		}
 		
 		$config = SiteConfig::current_site_config();
 
@@ -257,7 +259,8 @@ class SimpleCachePublisher {
 				$hosts = $PROXY_CACHE_HOSTMAP[$domain];
 				foreach ($hosts as $otherDomain) {
 					$key = $otherDomain .'/' . $path;
-					$storeData = str_replace($domain, $otherDomain, $data);
+					$storeData = clone $data;
+					$storeData->Content = str_replace($domain, $otherDomain, $storeData->Content);
 					$cache->store($key, $storeData);
 				}
 			}
