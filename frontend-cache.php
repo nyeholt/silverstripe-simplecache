@@ -56,7 +56,6 @@ if (substr(strtolower($url), 0, strlen(BASE_URL)) == strtolower(BASE_URL)) $url 
 
 
 if (defined('USE_PROXY') && USE_PROXY) {
-	
 	if (defined('PROXY_CONFIG_FILE')) {
 		include_once BASE_PATH . '/' . PROXY_CONFIG_FILE;
 	}
@@ -74,7 +73,9 @@ if (defined('USE_PROXY') && USE_PROXY) {
 	$cookies = defined('PROXY_BYPASS_COOKIES') ? explode(',', PROXY_BYPASS_COOKIES) : null;
 	$url_config = isset($PROXY_CACHE_URLS) ? $PROXY_CACHE_URLS : null;
 	
-	$proxy = new FrontendProxy($publisher, $dynamic, $url_config, $cookies);
+	$proxyclass = defined('PROXY_CLASS') ? PROXY_CLASS : 'FrontendProxy';
+
+	$proxy = new $proxyclass($publisher, $dynamic, $url_config, $cookies);
 	
 	$host = $_SERVER['HTTP_HOST'];
 	$relativeUrl = trim($url, '/');
