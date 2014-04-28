@@ -50,4 +50,10 @@ Injector:
     properties:
       # default for 1 day expiry
       expiry: 86400
-
+  CacheClearFilter:
+    properties: 
+      dynamicCache: %$DynamicPublisherCache
+  RequestProcessor:
+    properties:
+      filters:
+        - %$CacheClearFilter
