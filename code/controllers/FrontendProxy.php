@@ -75,6 +75,7 @@ class FrontendProxy {
 			}
 		}
 		
+		// these are set regardless of any additional rules
 		if (strpos($fullUrl, '/admin/') === 0 || strpos($fullUrl, '/Security/') === 0 || strpos($fullUrl, '/dev/') === 0) {
 			$this->enabled = false;
 			return;
@@ -91,15 +92,15 @@ class FrontendProxy {
 			return false;
 		}
 		$key = "$host/$url";
-		
+
 		if ($this->staticCache) {
 			$this->currentItem = $this->staticCache->get($key);
 			if ($this->currentItem) {
 				$this->headers[] = 'X-SilverStripe-Cache: hit at '.@date('r');
 			}
 		}
-		
-		if (!$this->currentItem && $this->dynamicCache) {
+
+		if (!$this->currentItem && $this->dynamicCache && $this->canCache($host, $url)) {
 			$this->currentItem = $this->dynamicCache->get($key);
 			if ($this->currentItem) {
 				$this->headers[] = 'X-SilverStripe-Cache: gen-hit at '.@date('r');
