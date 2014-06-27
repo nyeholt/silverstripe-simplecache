@@ -28,6 +28,12 @@ class SimpleCachePublishingJob extends AbstractQueuedJob {
 			$this->setObject($object);
 			
 			if (!$urls) {
+				// swap over to a proper base URL if needed
+				if ($object->SiteID && class_exists('Multisites')) {
+					// let's set the base directly
+					$base = $object->Site()->getUrl();
+					Config::inst()->update('Director', 'alternate_base_url', $base);
+				}
 				$stage = Versioned::current_stage();
 				Versioned::reading_stage('Live');
 				$urls = array();

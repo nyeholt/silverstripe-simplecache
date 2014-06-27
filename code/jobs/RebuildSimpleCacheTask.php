@@ -13,7 +13,14 @@ class RebuildSimpleCacheTask extends BuildTask {
 					$urls = array();
 					// only used for later context
 					$object = null;
+					
+
 					foreach ($pages as $object) {
+						if ($object->SiteID && class_exists('Multisites')) {
+							// let's set the base directly
+							$base = $object->Site()->getUrl();
+							Config::inst()->update('Director', 'alternate_base_url', $base);
+						}
 						if (singleton('SimpleCachePublisher')->dontCache($object)) {
 							continue;
 						}
