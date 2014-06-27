@@ -42,7 +42,7 @@ Injector:
   DynamicPublisherCacheStore:
     class: SimpleFileBasedCacheStore
     constructor:
-      - silverstripe-cache/dynamic_publisher
+      - dynamic_publisher
   DynamicPublisherCache:
     class: SimpleCache
     constructor:

@@ -85,6 +85,11 @@ class FrontendProxy {
 			$this->enabled = false;
 			return;
 		}
+		
+		if (count($_POST)) {
+			$this->enabled = false;
+			return;
+		}
 	}
 
 	public function urlIsCached($host, $url) {
@@ -193,12 +198,12 @@ class FrontendProxy {
 		$toCache->Age = $expiry;
 
 		// store the content for this 
-		if ($this->dynamicCache) {
+		if ($this->dynamicCache && strlen($toCache->Content)) {
 			$tags = isset($config['tags']) ? $config['tags'] : null;
 			$this->dynamicCache->store($key, $toCache, $expiry, $tags);
+			$this->headers[] = 'X-SilverStripe-Cache: miss-gen at '.@date('r') . ' on ' . $key;
 		}
 
-		$this->headers[] = 'X-SilverStripe-Cache: miss-gen at '.@date('r') . ' on ' . $key;
 		$this->currentItem = $toCache;
 	}
 	
