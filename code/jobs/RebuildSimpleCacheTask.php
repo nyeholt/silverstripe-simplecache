@@ -12,8 +12,7 @@ class RebuildSimpleCacheTask extends BuildTask {
 					
 					$urls = array();
 					// only used for later context
-					$object = null;
-					
+					$cachedObject = null;
 
 					foreach ($pages as $object) {
 						if ($object->SiteID && class_exists('Multisites')) {
@@ -33,10 +32,11 @@ class RebuildSimpleCacheTask extends BuildTask {
 						} else {
 							$urls[] = $object->AbsoluteLink();
 						}
+						$cachedObject = $object;
 					}
 					
-					if ($object) {
-						$job = new SimpleCachePublishingJob($object, $urls);
+					if ($cachedObject) {
+						$job = new SimpleCachePublishingJob($cachedObject, $urls);
 						singleton('QueuedJobService')->queueJob($job);
 					}
 				}

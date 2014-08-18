@@ -99,12 +99,17 @@ class CachedFragment extends ViewableData {
 		$data = $this->context->renderWith($this->templateName);
 		$data = $data->raw();
 
-		if (Versioned::current_stage() != 'Stage' && strlen($data)) {
+		if (Versioned::current_stage() != 'Stage' && strlen($data) && !isset($_GET['flush'])) {
 //			$this->cache->store($key, $menu, self::CACHE_LENGTH);
 				// when storing for the frontend cache replacement stuff, use whatever we have
 				// configured
-				// do NOT store if we're on stage
+				// do NOT store if we're on stage or we have _flush=1
 			$this->cache->store($key, $data);
+		}
+		
+		// clear the cache key for next request
+		if (isset($_GET['flush'])) {
+			$this->cache->delete($key);
 		}
 		
 		if (defined('PROXY_CACHE_GENERATING')) {
