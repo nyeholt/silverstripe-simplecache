@@ -1,0 +1,16 @@
+{
+	"name": "silverstripe/simplecache",
+	"description": "Simple(r) caching abstraction layer, with a static publisher that will use that cache layer for storage",
+	"type": "silverstripe-module",
+	"keywords": ["silverstripe", "cache", "static publisher"],
+	"license": "BSD-3-Clause",
+	"authors": [
+	{
+		"name": "Marcus Nyeholt",
+		"email": "marcus@silverstripe.com.au"
+	}
+	],
+	"require":
+	{
+	}
+}
