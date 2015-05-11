@@ -1,5 +1,5 @@
 {
-	"name": "silverstripe/simplecache",
+	"name": "silverstripe-australia/simplecache",
 	"description": "Simple(r) caching abstraction layer, with a static publisher that will use that cache layer for storage",
 	"type": "silverstripe-module",
 	"keywords": ["silverstripe", "cache", "static publisher"],
