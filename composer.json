@@ -12,5 +12,6 @@
 	],
 	"require":
 	{
+		"silverstripe/queuedjobs": "~2.4"
 	}
 }
