@@ -13,5 +13,10 @@
 	"require":
 	{
 		"silverstripe/queuedjobs": "~2.4"
+	},
+	"extra": {
+		"branch-alias": {
+			"dev-master": "1.0.x-dev"
+		}
 	}
 }
