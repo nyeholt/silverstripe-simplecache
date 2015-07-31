@@ -75,7 +75,7 @@ FileETag None
 	RewriteCond %{REQUEST_URI} ^(.*)$
 	RewriteCond %{REQUEST_FILENAME} !-f
 	
-	RewriteRule .* simplecache/cache-main.php?url=%1&%{QUERY_STRING} [L]
+	RewriteRule .* simplecache/frontend-cache.php?url=%1&%{QUERY_STRING} [L]
 
 </IfModule>
 ### SILVERSTRIPE END ###
