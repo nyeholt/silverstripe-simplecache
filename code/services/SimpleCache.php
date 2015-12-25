@@ -13,349 +13,365 @@ include_once(dirname(__FILE__).'/SimpleCacheStores.php');
  * 
  * 
  */
-class SimpleCache {
+class SimpleCache
+{
 
-	const HIT_KEY = '__SC_HIT';
-	const MISS_KEY = '__SC_MISS';
-	
-	/**
-	 * The cache store to use for actually putting and retrieving items from
-	 * 
-	 * @var CacheStore
-	 */
-	protected $store = null;
+    const HIT_KEY = '__SC_HIT';
+    const MISS_KEY = '__SC_MISS';
+    
+    /**
+     * The cache store to use for actually putting and retrieving items from
+     * 
+     * @var CacheStore
+     */
+    protected $store = null;
 
-	/**
-	 * The type of store we're using for the cache
-	 * 
-	 * @var string
-	 */
-	
-	public static $store_type = 'SimpleFileBasedCacheStore';
-	
-	/**
-	 *
-	 * @var Define some config for named caches
-	 */
-	public static $cache_configs = array(
-		'default'	=> array(
-			'store_type'		=> 'SimpleFileBasedCacheStore',
-			'store_options'		=> array(
-				'silverstripe-cache/cache_store',
-			),
-			'cache_options'		=> array(
-				'expiry'	=> 600
-			)
-		),
-	);
+    /**
+     * The type of store we're using for the cache
+     * 
+     * @var string
+     */
+    
+    public static $store_type = 'SimpleFileBasedCacheStore';
+    
+    /**
+     *
+     * @var Define some config for named caches
+     */
+    public static $cache_configs = array(
+        'default'    => array(
+            'store_type'        => 'SimpleFileBasedCacheStore',
+            'store_options'        => array(
+                'silverstripe-cache/cache_store',
+            ),
+            'cache_options'        => array(
+                'expiry'    => 600
+            )
+        ),
+    );
 
-	/**
-	 * @var int
-	 */
-	public $expiry = 0;
+    /**
+     * @var int
+     */
+    public $expiry = 0;
 
-	/**
-	 * In memory object store
-	 *
-	 * @var array
-	 */
-	private $items = array();
-	
-	/**
-	 * Track cache instances
-	 *
-	 * @var array
-	 */
-	private static $instances = array();
-	
-	/**
-	 * Track hits and misses 
-	 *
-	 * @var int
-	 */
-	private $hits = 0;
-	private $misses = 0;
-	
-	public $recordStats = false;
+    /**
+     * In memory object store
+     *
+     * @var array
+     */
+    private $items = array();
+    
+    /**
+     * Track cache instances
+     *
+     * @var array
+     */
+    private static $instances = array();
+    
+    /**
+     * Track hits and misses 
+     *
+     * @var int
+     */
+    private $hits = 0;
+    private $misses = 0;
+    
+    public $recordStats = false;
 
-	/**
-	 * Get the instance
-	 * @return CacheService
-	 */
-	public function inst() {
-		return self::get_cache('default');
-	}
-	
-	/**
-	 * Get a named cache
-	 *
-	 * @param type $name
-	 * @param type $store 
-	 * 
-	 * @return SimpleCache
-	 */
-	public static function get_cache($name='default', $store=null, $config = null) {
-		if (!isset(self::$instances[$name])) {
-			
-			if (!isset(self::$cache_configs[$name])) {
-				$name = 'default';
-			}
+    /**
+     * Get the instance
+     * @return CacheService
+     */
+    public function inst()
+    {
+        return self::get_cache('default');
+    }
+    
+    /**
+     * Get a named cache
+     *
+     * @param type $name
+     * @param type $store 
+     * 
+     * @return SimpleCache
+     */
+    public static function get_cache($name='default', $store=null, $config = null)
+    {
+        if (!isset(self::$instances[$name])) {
+            if (!isset(self::$cache_configs[$name])) {
+                $name = 'default';
+            }
 
-			if (isset(self::$cache_configs[$name]) && $conf = self::$cache_configs[$name]) {
-				$type = $conf['store_type'];
-				$storeOpts = $conf['store_options'];
-				$config = isset($conf['cache_options']) ? $conf['cache_options'] : $config;
-				$reflector = new ReflectionClass($type);
-				$store = $reflector->newInstanceArgs($storeOpts);
-			}
+            if (isset(self::$cache_configs[$name]) && $conf = self::$cache_configs[$name]) {
+                $type = $conf['store_type'];
+                $storeOpts = $conf['store_options'];
+                $config = isset($conf['cache_options']) ? $conf['cache_options'] : $config;
+                $reflector = new ReflectionClass($type);
+                $store = $reflector->newInstanceArgs($storeOpts);
+            }
 
-			self::$instances[$name] = new SimpleCache($store, $config);
-		}
-		return self::$instances[$name];
-	}
+            self::$instances[$name] = new SimpleCache($store, $config);
+        }
+        return self::$instances[$name];
+    }
 
-	public function __construct($store = null, $config = null) {
-		if (!$store) {
-			$store = self::$store_type;
-		}
-		if (is_string($store)) {
-			$store = new $store;
-		}
-		
-		$this->store = $store;
-		
-		if ($config) {
-			$this->configure($config);
-		}
-		
-		register_shutdown_function(array($this, 'shutdown'));
-	}
+    public function __construct($store = null, $config = null)
+    {
+        if (!$store) {
+            $store = self::$store_type;
+        }
+        if (is_string($store)) {
+            $store = new $store;
+        }
+        
+        $this->store = $store;
+        
+        if ($config) {
+            $this->configure($config);
+        }
+        
+        register_shutdown_function(array($this, 'shutdown'));
+    }
 
-	/**
-	 * Set config for this cache
-	 */
-	public function configure($config) {
-		$this->expiry = isset($config['expiry']) ? $config['expiry'] : $this->expiry;
-	}
+    /**
+     * Set config for this cache
+     */
+    public function configure($config)
+    {
+        $this->expiry = isset($config['expiry']) ? $config['expiry'] : $this->expiry;
+    }
 
-	/**
-	 * On shutdown, store hits and misses
-	 */
-	public function shutdown() {
-		if ($this->recordStats) {
-			if ($this->hits) {
-				$curr = $this->get(self::HIT_KEY);
-				$curr += $this->hits; // don't count the hit on hit_key!
-				$this->store(self::HIT_KEY, $curr);
-			}
+    /**
+     * On shutdown, store hits and misses
+     */
+    public function shutdown()
+    {
+        if ($this->recordStats) {
+            if ($this->hits) {
+                $curr = $this->get(self::HIT_KEY);
+                $curr += $this->hits; // don't count the hit on hit_key!
+                $this->store(self::HIT_KEY, $curr);
+            }
 
-			if ($this->misses) {
-				$curr = $this->get(self::MISS_KEY);
-				$curr += $this->misses;
-				$this->store(self::MISS_KEY, $curr);
-			}
-		}
-	}
+            if ($this->misses) {
+                $curr = $this->get(self::MISS_KEY);
+                $curr += $this->misses;
+                $this->store(self::MISS_KEY, $curr);
+            }
+        }
+    }
 
-	/**
-	 * Gets statistics about this cache 
-	 */
-	public function stats() {
-		$stats = new stdClass();
-		$stats->hits = $this->get(self::HIT_KEY);
-		$stats->misses = $this->get(self::MISS_KEY);
-		$stats->count = $this->store->count();
-		
-		return $stats;
-	}
-	
-	protected function tagKey($tag) {
-		return "__TAG__$tag";
-	}
+    /**
+     * Gets statistics about this cache 
+     */
+    public function stats()
+    {
+        $stats = new stdClass();
+        $stats->hits = $this->get(self::HIT_KEY);
+        $stats->misses = $this->get(self::MISS_KEY);
+        $stats->count = $this->store->count();
+        
+        return $stats;
+    }
+    
+    protected function tagKey($tag)
+    {
+        return "__TAG__$tag";
+    }
 
 
-	/**
-	 * Cache an item
-	 *
-	 * @param string $key
-	 * @param mixed $value
-	 * @param int $expiry
-	 * 			How many seconds to cache this object for (no value uses the configured default)
-	 */
-	public function store($key, $value, $expiry = -1, $tags = null) {
-		if ($expiry == -1) {
-			$expiry = $this->expiry;
-		}
-		$entry = new SimpleCacheItem();
+    /**
+     * Cache an item
+     *
+     * @param string $key
+     * @param mixed $value
+     * @param int $expiry
+     * 			How many seconds to cache this object for (no value uses the configured default)
+     */
+    public function store($key, $value, $expiry = -1, $tags = null)
+    {
+        if ($expiry == -1) {
+            $expiry = $this->expiry;
+        }
+        $entry = new SimpleCacheItem();
 
-		$entry->value = serialize($value);
-		$entry->stored = time();
-		if ($expiry) {
-			$entry->expireAt = time() + $expiry;
-		} else {
-			$entry->expireAt = 0;
-		}
+        $entry->value = serialize($value);
+        $entry->stored = time();
+        if ($expiry) {
+            $entry->expireAt = time() + $expiry;
+        } else {
+            $entry->expireAt = 0;
+        }
 
-		$data = serialize($entry);
-		$this->store->store($key, $data);
-		
-		// if we've got tags, add this element to the list of keys stored for
-		// a given tag
-		if ($tags) {
-			foreach ($tags as $tag) {
-				$tagKey = $this->tagKey($tag);
-				$tagStore = $this->get($tagKey);
-				if (!$tagStore) {
-					$tagStore = array();
-				}
-				// we store the key in the map to prevent duplicated keys
-				$tagStore[$key] = true;
-				$this->store($tagKey, $tagStore, 0);
-			}
-		}
+        $data = serialize($entry);
+        $this->store->store($key, $data);
+        
+        // if we've got tags, add this element to the list of keys stored for
+        // a given tag
+        if ($tags) {
+            foreach ($tags as $tag) {
+                $tagKey = $this->tagKey($tag);
+                $tagStore = $this->get($tagKey);
+                if (!$tagStore) {
+                    $tagStore = array();
+                }
+                // we store the key in the map to prevent duplicated keys
+                $tagStore[$key] = true;
+                $this->store($tagKey, $tagStore, 0);
+            }
+        }
 
-		$this->items[$key] = $entry;
-	}
+        $this->items[$key] = $entry;
+    }
 
-	/**
-	 * Gets a cached value for a given key
-	 * @param String $key
-	 * 			The key to retrieve data for
-	 */
-	public function get($key) {
-		$entry = null;
+    /**
+     * Gets a cached value for a given key
+     * @param String $key
+     * 			The key to retrieve data for
+     */
+    public function get($key)
+    {
+        $entry = null;
 
-		if (isset($this->items[$key])) {
-			$entry = $this->items[$key];
-		} else {
-			$data = $this->store->get($key);
-			if ($data) {
-				$entry = unserialize($data);
-			}
-		}
+        if (isset($this->items[$key])) {
+            $entry = $this->items[$key];
+        } else {
+            $data = $this->store->get($key);
+            if ($data) {
+                $entry = unserialize($data);
+            }
+        }
 
-		if (!$entry) {
-			if ($key != self::HIT_KEY && $key != self::MISS_KEY)  {
-				++$this->misses;
-			}
-			
-			return $entry;
-		}
+        if (!$entry) {
+            if ($key != self::HIT_KEY && $key != self::MISS_KEY) {
+                ++$this->misses;
+            }
+            
+            return $entry;
+        }
 
-		// if the expire time is in the future
-		if ($entry->expireAt > time() || $entry->expireAt == 0) {
-			if ($key != self::HIT_KEY && $key != self::MISS_KEY)  {
-				++$this->hits;
-			}
-			return unserialize($entry->value);
-		}
+        // if the expire time is in the future
+        if ($entry->expireAt > time() || $entry->expireAt == 0) {
+            if ($key != self::HIT_KEY && $key != self::MISS_KEY) {
+                ++$this->hits;
+            }
+            return unserialize($entry->value);
+        }
 
-		if ($key != self::MISS_KEY) {
-			++$this->misses;
-		}
-		// if we got to here, we need to expire the value
-		$this->expire($key);
-		return null;
-	}
-	
-	/**
-	 * Get a list of items by tag
-	 * 
-	 * @param string $tag
-	 * @return array
-	 */
-	public function getByTag($tag) {
-		$tagKey = $this->tagKey($tag);
-		$keys = $this->get($tagKey);
-		
-		$elems = array();
-		if ($keys) {
-			foreach ($keys as $key => $keyval) {
-				$elem = $this->get($key);
-				if (!$elem) {
-					unset($keys[$key]);
-				} else {
-					$elems[] = $elem;
-				}
-			}
-			
-			// re-save all the relevant keys
-			$this->store($tagKey, $keys, 0);
-		}
+        if ($key != self::MISS_KEY) {
+            ++$this->misses;
+        }
+        // if we got to here, we need to expire the value
+        $this->expire($key);
+        return null;
+    }
+    
+    /**
+     * Get a list of items by tag
+     * 
+     * @param string $tag
+     * @return array
+     */
+    public function getByTag($tag)
+    {
+        $tagKey = $this->tagKey($tag);
+        $keys = $this->get($tagKey);
+        
+        $elems = array();
+        if ($keys) {
+            foreach ($keys as $key => $keyval) {
+                $elem = $this->get($key);
+                if (!$elem) {
+                    unset($keys[$key]);
+                } else {
+                    $elems[] = $elem;
+                }
+            }
+            
+            // re-save all the relevant keys
+            $this->store($tagKey, $keys, 0);
+        }
 
-		return $elems;
-	}
-	
-	/**
-	 * Gets the raw item underneath a given key, so we can see things about expiry etc
-	 * @param type $key 
-	 */
-	public function getCacheEntry($key) {
-		$entry = null;
-		if (isset($this->items[$key])) {
-			$entry = $this->items[$key];
-		} else {
-			$data = $this->store->get($key);
-			if ($data) {
-				$entry = unserialize($data);
-			}
-		}
+        return $elems;
+    }
+    
+    /**
+     * Gets the raw item underneath a given key, so we can see things about expiry etc
+     * @param type $key 
+     */
+    public function getCacheEntry($key)
+    {
+        $entry = null;
+        if (isset($this->items[$key])) {
+            $entry = $this->items[$key];
+        } else {
+            $data = $this->store->get($key);
+            if ($data) {
+                $entry = unserialize($data);
+            }
+        }
 
-		return $entry;
-	}
-	
-	/**
-	 * Delete from the cache
-	 *
-	 * @param mixed $key 
-	 */
-	public function delete($key) {
-		unset($this->items[$key]);
-		$this->store->delete($key);
-	}
-	
-	/**
-	 * Clear out all elements with a particular tag
-	 *
-	 * @param string $tag
-	 */
-	public function deleteByTag($tag) {
-		$tagKey = $this->tagKey($tag);
-		$keys = $this->get($tagKey);
-		if ($keys) {
-			foreach ($keys as $key => $dummy) {
-				$this->delete($key);
-			}
-		}
-		
-		$this->delete($tagKey);
-	}
+        return $entry;
+    }
+    
+    /**
+     * Delete from the cache
+     *
+     * @param mixed $key 
+     */
+    public function delete($key)
+    {
+        unset($this->items[$key]);
+        $this->store->delete($key);
+    }
+    
+    /**
+     * Clear out all elements with a particular tag
+     *
+     * @param string $tag
+     */
+    public function deleteByTag($tag)
+    {
+        $tagKey = $this->tagKey($tag);
+        $keys = $this->get($tagKey);
+        if ($keys) {
+            foreach ($keys as $key => $dummy) {
+                $this->delete($key);
+            }
+        }
+        
+        $this->delete($tagKey);
+    }
 
-	/**
-	 * Explicitly expire the given key
-	 * 
-	 * @param $key
-	 */
-	public function expire($key) {
-		$this->delete($key);
-	}
+    /**
+     * Explicitly expire the given key
+     * 
+     * @param $key
+     */
+    public function expire($key)
+    {
+        $this->delete($key);
+    }
 
-	/**
-	 * Flush the whole cache clean
-	 */
-	public function clear() {
-		$this->items = array();
-		$this->store->clear();
-	}
-	
-	/**
-	 * If underlying store access is needed; avoid using if possible! 
-	 * 
-	 * @return SimpleCacheStore
-	 */
-	public function getStore() {
-		return $this->store;
-	}
+    /**
+     * Flush the whole cache clean
+     */
+    public function clear()
+    {
+        $this->items = array();
+        $this->store->clear();
+    }
+    
+    /**
+     * If underlying store access is needed; avoid using if possible! 
+     * 
+     * @return SimpleCacheStore
+     */
+    public function getStore()
+    {
+        return $this->store;
+    }
 }
 
 /**
@@ -364,27 +380,30 @@ class SimpleCache {
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  *
  */
-class SimpleCacheItem {
+class SimpleCacheItem
+{
 
-	public $value;
-	public $expireAt;
-	public $stored;
-
+    public $value;
+    public $expireAt;
+    public $stored;
 }
 
 if (!function_exists('rrmdir')) {
-	function rrmdir($dir) {
-		if (is_dir($dir)) {
-			$objects = scandir($dir);
-			foreach ($objects as $object) {
-				if ($object != "." && $object != "..") {
-					if (filetype($dir . "/" . $object) == "dir")
-						rrmdir($dir . "/" . $object); else
-						unlink($dir . "/" . $object);
-				}
-			}
-			reset($objects);
-			rmdir($dir);
-		}
-	}
+    function rrmdir($dir)
+    {
+        if (is_dir($dir)) {
+            $objects = scandir($dir);
+            foreach ($objects as $object) {
+                if ($object != "." && $object != "..") {
+                    if (filetype($dir . "/" . $object) == "dir") {
+                        rrmdir($dir . "/" . $object);
+                    } else {
+                        unlink($dir . "/" . $object);
+                    }
+                }
+            }
+            reset($objects);
+            rmdir($dir);
+        }
+    }
 }
