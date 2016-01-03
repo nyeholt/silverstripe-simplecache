@@ -32,34 +32,58 @@ class SimpleCacheAdmin extends LeftAndMain {
 			$cache = $this->getCache($name);
 			if ($cache) {
 				$stats = $cache->stats();
-				$fields->addFieldToTab('Root.Main', new HeaderField($name.'header', $name));
-				$fields->addFieldToTab('Root.Main', new ReadonlyField($name.'Hits', 'Hits', $stats->hits));
-				$fields->addFieldToTab('Root.Main', new ReadonlyField($name.'Miss', 'Miss', $stats->misses));
-				$fields->addFieldToTab('Root.Main', new ReadonlyField($name.'Count', 'Count', $stats->count));
+				$fields->addFieldToTab('Root.Info', new HeaderField($name.'header', $name));
+				$fields->addFieldToTab('Root.Info', new ReadonlyField($name.'Hits', 'Hits', $stats->hits));
+				$fields->addFieldToTab('Root.Info', new ReadonlyField($name.'Miss', 'Miss', $stats->misses));
+				$fields->addFieldToTab('Root.Info', new ReadonlyField($name.'Count', 'Count', $stats->count));
 				
 				$caches[$name] = $name;
 			}
 		}
-
-		if (count($caches)) {
-			$fields->addFieldToTab('Root.Clear', new CheckboxSetField('ToClear', 'Caches to clear', $caches));
-		}
 		
-		$actions = new FieldList(new FormAction('clear', 'Clear'));
-		$form = new Form($this, 'EditForm', $fields, $actions);
-		$form->addExtraClass('cms-edit-form cms-panel-padded center ' . $this->BaseCSSClasses());
+		if (count($caches)) {
+			$fields->addFieldToTab('Root.Main', new CheckboxSetField('ToClear', 'Caches to clear', $caches));
+			
+			$fields->addFieldToTab('Root.Main', new TextField('Key', 'Key to clear from selected caches'));
+		
+		}
+		$actions = new FieldList(FormAction::create('clear', 'Clear')->setUseButtonTag(true));
+
+		$form = CMSForm::create(
+				$this, "EditForm", $fields, $actions
+			)->setHTMLID('Form_EditForm');
+
+		$form->addExtraClass('cms-edit-form center');
+		
+		$form->setResponseNegotiator($this->getResponseNegotiator());
+		$form->setTemplate('SimpleCacheAdmin_EditForm');
+		$form->setAttribute('data-pjax-fragment', 'CurrentForm');
+		
 		return $form;
 	}
 	
-	public function clear($data, $form) {
+	public function clear($data, CMSForm $form) {
 		if (isset($data['ToClear'])) {
+			$cleared = array();
 			foreach ($data['ToClear'] as $name) {
 				$cache = $this->getCache($name);
 				if ($cache) {
-					$cache->clear();
+					if (isset($data['Key'])) {
+						$cache->delete($data['Key']);
+					} else {
+						$cache->clear();
+					}
+					
+					$cleared[] = $name;
 				}
 			}
+			$cleared = implode(',', $cleared);
+			$form->sessionMessage("Cleared $cleared", 'good');
+		} else {
+			$form->sessionMessage("No caches cleared", 'good');
 		}
+		
+		return $form->getResponseNegotiator()->respond($this->getRequest());
 	}
 
 	protected function getCache($name) {

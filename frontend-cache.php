@@ -70,7 +70,7 @@ if (defined('USE_PROXY') && USE_PROXY) {
 		$dynamic = SimpleCache::get_cache(PROXY_DYNAMIC_PUBLISHER);
 	}
 	
-	$cookies = defined('PROXY_BYPASS_COOKIES') ? explode(',', PROXY_BYPASS_COOKIES) : null;
+	$cookies = defined('PROXY_BYPASS_COOKIES') ? explode(',', PROXY_BYPASS_COOKIES) : array();
 	$url_config = isset($PROXY_CACHE_URLS) ? $PROXY_CACHE_URLS : null;
 	
 	$proxyclass = defined('PROXY_CLASS') ? PROXY_CLASS : 'FrontendProxy';

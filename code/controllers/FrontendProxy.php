@@ -8,7 +8,7 @@ class FrontendProxy {
 	protected $server;
 	protected $env;
 
-	protected $bypassCookies;
+	protected $bypassCookies = array();
 	
 	/**
 	 * @var SimpleCache
@@ -53,7 +53,7 @@ class FrontendProxy {
 	
 	public function __construct(
 		$staticCache = null, $dynamicCache = null, 
-		$urlRules = null, $bypassCookies = null,
+		$urlRules = null, $bypassCookies = array(),
 		$serverVars = null, $envVars = null
 	) {
 
