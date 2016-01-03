@@ -42,6 +42,15 @@ class SimpleCachePublisherExtension extends DataExtension {
 		}
 		$this->cachePublisher->publishDataObject($this->owner);
 	}
+	
+	
+	public function updateAffectedPages(&$urlsToPublish) {
+		if ($this->owner->hasMethod('DependentPages')) {
+			foreach($this->owner->DependentPages(false) as $page) {
+				$urlsToPublish[] = $page->AbsoluteLink();
+			}
+		}
+	}
 
 	public function onRenameLinkedAsset($original) {
 		if (SiteConfig::current_site_config()->DisableSiteCache) {

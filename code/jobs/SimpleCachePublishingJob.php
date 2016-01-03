@@ -58,6 +58,8 @@ class SimpleCachePublishingJob extends AbstractQueuedJob {
 					$urls = array_keys($urls);
 				}
 				Versioned::reading_stage($stage);
+				
+				$object->extend('updateAffectedPages', $urls);
 			}
 
 			$this->urls = array_unique($urls);

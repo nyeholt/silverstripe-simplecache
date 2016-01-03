@@ -82,6 +82,7 @@ class SimpleCachePublisher {
 			}
 
 			if (count($specificUrls)) {
+				$object->extend('updateAffectedPages', $specificUrls);
 				$this->publishUrls($specificUrls);
 			}
 
