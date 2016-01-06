@@ -10,9 +10,6 @@ Injector:
     type: prototype
     properties:
       cache: %$FragmentCache
-  SimpleCachePublisher:
-    properties:
-      cache: %$PublisherCache
   CacheClearFilter:
     properties: 
       dynamicCache: %$DynamicPublisherCache

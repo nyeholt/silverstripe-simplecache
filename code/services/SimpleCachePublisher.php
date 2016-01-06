@@ -406,6 +406,9 @@ class SimpleCachePublisher {
 	}
 	
 	protected function getCache() {
+		if (!$this->cache) {
+			$this->cache = Injector::inst()->get('PublisherCache');
+		}
 		return $this->cache;
 	}
 
