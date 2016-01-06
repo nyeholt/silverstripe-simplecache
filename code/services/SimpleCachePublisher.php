@@ -238,6 +238,7 @@ class SimpleCachePublisher {
 			if ($path == 'home') {
 				$path = '';
 			}
+			$path = (strlen($path) ? $path : 'index');
 			
 			$data = new stdClass;
 			$data->Content = $content;

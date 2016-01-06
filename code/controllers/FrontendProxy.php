@@ -96,6 +96,8 @@ class FrontendProxy {
 		if (!$this->enabled) {
 			return false;
 		}
+		
+		$url = strlen($url) ? $url : 'index';
 		$key = "$host/$url";
 
 		if ($this->staticCache) {
