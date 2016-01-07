@@ -33,6 +33,15 @@ class SimpleCachePublisherExtension extends DataExtension {
 	}
 
 	public function onAfterPublish($original) {
+		// if it's versioned, let's check its old URL
+		if (strlen($original->URLSegment) && strlen($this->owner->URLSegment) && 
+			$original->URLSegment != $this->owner->URLSegment) {
+			$oldUrl = $original->Link();
+			$this->unpublishPages(array($oldUrl));
+			$o = 1;
+		}
+		
+		
 		$this->republish($original);
 	}
 
