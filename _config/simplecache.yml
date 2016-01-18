@@ -10,6 +10,12 @@ Injector:
     type: prototype
     properties:
       cache: %$FragmentCache
+  # Note: Both the following exist purely for a 'null' usage 
+  # in case the PHP based configuration isn't defined
+  PublisherCache:
+    class: SimpleCache
+  DynamicPublisherCache:
+    class: SimpleCache
   CacheClearFilter:
     properties: 
       dynamicCache: %$DynamicPublisherCache
