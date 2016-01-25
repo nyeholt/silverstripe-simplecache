@@ -21,6 +21,13 @@ class FrontendProxy {
 	protected $dynamicCache;
 	
 	/**
+	 * Do we cache URLs with GET params?
+	 *
+	 * @var boolean
+	 */
+	protected $cacheGetVars = false;
+	
+	/**
 	 * 
 	 * A list of url => expiry mapping that indicate how long particular
 	 * url sets can be cached on-request. Specify -1 to NEVER cache 
@@ -63,6 +70,8 @@ class FrontendProxy {
 		$this->dynamicCache = $dynamicCache;
 		$this->urlRules = $urlRules;
 		$this->bypassCookies = $bypassCookies;
+		
+		$this->cacheGetVars = defined('CACHE_ALLOW_GET_VARS') && CACHE_ALLOW_GET_VARS;
 	}
 	
 	public function checkIfEnabled($host, $url) {
@@ -81,10 +90,13 @@ class FrontendProxy {
 			return;
 		}
 
-		if (count(array_diff(array_keys($_GET), array('url', 'cacheSubdir'))) != 0) {
+		
+		if (!$this->cacheGetVars && count(array_diff(array_keys($_GET), array('url'))) != 0) {
 			$this->enabled = false;
 			return;
 		}
+		
+		
 		
 		if (count($_POST)) {
 			$this->enabled = false;
@@ -98,6 +110,9 @@ class FrontendProxy {
 		}
 		
 		$url = strlen($url) ? $url : 'index';
+
+		$url = $this->urlForCaching($url);
+
 		$key = "$host/$url";
 
 		if ($this->staticCache) {
@@ -128,6 +143,7 @@ class FrontendProxy {
 	}
 	
 	public function expiryForUrl($url) {
+		$url = $this->urlForCaching($url);
 		$config = $this->configForUrl($url);
 		return isset($config['expiry']) ? $config['expiry'] : -1;
 	}
@@ -180,8 +196,29 @@ class FrontendProxy {
 		}
 		return $config;
 	}
+	
+	public function urlForCaching($url) {
+		if ($this->cacheGetVars) {
+			$params = $_GET;
+			
+			// check for ajax and append something to the URL to indicate that
+			if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
+				$params['ajax'] = 1;
+			}
+
+			unset($params['url']);
+			$qs = http_build_query($params);
+			if (strlen($qs)) {
+				$url .= '?' . $qs;
+			}
+			
+		}
+		
+		return $url;
+	}
 
 	public function generateCache($host, $url) {
+		$url = $this->urlForCaching($url);
 		$key = "$host/$url";
 		define('PROXY_CACHE_GENERATING', true);
 		
