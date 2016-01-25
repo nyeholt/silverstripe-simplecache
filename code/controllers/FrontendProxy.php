@@ -151,7 +151,7 @@ class FrontendProxy {
 	public function configForUrl($url) {
 		$config = array('expiry' => -1);
 		foreach ($this->urlRules as $segment => $options) {
-			if (preg_match('|' . $segment . '|', $url, $matches)) {
+			if (preg_match('{' . $segment . '}', $url, $matches)) {
 				// if we've got an array, it means we've got some config options
 				if (is_array($options)) {
 					$config = array_merge($config, $options);
