@@ -198,7 +198,7 @@ class FrontendProxy {
 	}
 	
 	public function urlForCaching($url) {
-		if ($this->cacheGetVars) {
+		if ($this->cacheGetVars && strpos($url, '?') === false) {
 			$params = $_GET;
 			
 			// check for ajax and append something to the URL to indicate that
