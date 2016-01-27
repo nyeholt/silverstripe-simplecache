@@ -117,7 +117,6 @@ class FrontendProxy {
 		}
 		
 		$url = strlen($url) ? $url : 'index';
-
 		$url = $this->urlForCaching($url);
 
 		$key = "$host/$url";
@@ -204,22 +203,28 @@ class FrontendProxy {
 		return $config;
 	}
 	
+	/**
+	 * Return a URL slightly dressed up to use for cache interrogation
+	 * 
+	 * @param type $url
+	 * @return string
+	 */
 	public function urlForCaching($url) {
 		if ($this->cacheGetVars && strpos($url, '?') === false) {
 			$params = $_GET;
 			
-			// check for ajax and append something to the URL to indicate that
-			if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
-				$params['ajax'] = 1;
-			}
-
 			unset($params['url']);
 			$qs = http_build_query($params);
 			if (strlen($qs)) {
 				$url .= '?' . $qs;
 			}
 		}
-		
+
+		// check for ajax and append something to the URL to indicate that
+		if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
+			$url .= '/ajax';
+		}
+
 		return $url;
 	}
 
