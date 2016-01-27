@@ -28,6 +28,12 @@ class FrontendProxy {
 	protected $cacheGetVars = false;
 	
 	/**
+	 * From a cache perspective, should GET parameters be ignored?
+	 * @var type 
+	 */
+	protected $ignoreGetVars = false;
+	
+	/**
 	 * 
 	 * A list of url => expiry mapping that indicate how long particular
 	 * url sets can be cached on-request. Specify -1 to NEVER cache 
@@ -72,6 +78,7 @@ class FrontendProxy {
 		$this->bypassCookies = $bypassCookies;
 		
 		$this->cacheGetVars = defined('CACHE_ALLOW_GET_VARS') && CACHE_ALLOW_GET_VARS;
+		$this->ignoreGetVars = defined('CACHE_IGNORE_GET_VARS') && CACHE_IGNORE_GET_VARS;
 	}
 	
 	public function checkIfEnabled($host, $url) {
@@ -91,7 +98,7 @@ class FrontendProxy {
 		}
 
 		
-		if (!$this->cacheGetVars && count(array_diff(array_keys($_GET), array('url'))) != 0) {
+		if (!($this->cacheGetVars || $this->ignoreGetVars) && count(array_diff(array_keys($_GET), array('url'))) != 0) {
 			$this->enabled = false;
 			return;
 		}
@@ -211,7 +218,6 @@ class FrontendProxy {
 			if (strlen($qs)) {
 				$url .= '?' . $qs;
 			}
-			
 		}
 		
 		return $url;
