@@ -263,7 +263,7 @@ class FrontendProxy {
 		}
 		
 		header("Cache-Control: no-cache, max-age=0, must-revalidate");
-
+		header("Edge-Control: !no-store, max-age=" . $this->currentItem->Age);
 		header("Expires: " . gmdate('D, d M Y H:i:s', time() + $this->currentItem->Age) . ' GMT');
 		header("Last-modified: " . gmdate('D, d M Y H:i:s', strtotime($this->currentItem->LastModified)) . ' GMT');
 		
