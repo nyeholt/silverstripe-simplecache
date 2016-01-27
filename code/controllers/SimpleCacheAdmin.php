@@ -1,8 +1,6 @@
 <?php
 
 /**
- * Description of SimpleCacheAdmin
- *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
 class SimpleCacheAdmin extends LeftAndMain {
@@ -68,7 +66,7 @@ class SimpleCacheAdmin extends LeftAndMain {
 			foreach ($data['ToClear'] as $name) {
 				$cache = $this->getCache($name);
 				if ($cache) {
-					if (isset($data['Key'])) {
+					if (isset($data['Key']) && strlen($data['Key'])) {
 						$cache->delete($data['Key']);
 					} else {
 						$cache->clear();
