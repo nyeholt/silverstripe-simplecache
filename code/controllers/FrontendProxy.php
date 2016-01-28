@@ -245,6 +245,14 @@ class FrontendProxy {
 		$toCache = new stdClass();
 		$toCache->Content = ob_get_clean();
 		$toCache->LastModified = date('Y-m-d H:i:s');
+		
+		// check headers to see if we have an expires header
+		$headers = headers_list();
+		if ($headerExpiry = $this->ageFromHeaders($headers, $expiry)) {
+			if ($headerExpiry < $expiry) {
+				$expiry = $headerExpiry;
+			}
+		}
 		$toCache->Age = $expiry;
 
 		// store the content for this 
@@ -255,6 +263,24 @@ class FrontendProxy {
 		}
 
 		$this->currentItem = $toCache;
+	}
+	
+	/**
+	 * Try and find the max-age from the list of headers
+	 * 
+	 * @param array $headerList
+	 */
+	protected function ageFromHeaders($headerList, $minAge = 0) {
+		foreach ($headerList as $header) {
+			if (preg_match('/max-age=(\d+)/i', $header, $matches)) {
+				$age = $matches[1];
+				if ($age && $age < $minAge) {
+					$minAge = $age;
+				}
+			}
+		}
+		
+		return $minAge;
 	}
 	
 	public function serve($host, $url) {
