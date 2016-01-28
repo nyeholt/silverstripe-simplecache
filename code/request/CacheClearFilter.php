@@ -12,7 +12,7 @@ class CacheClearFilter implements RequestFilter {
 	public $dynamicCache;
 	
 	public function postRequest(\SS_HTTPRequest $request, \SS_HTTPResponse $response, \DataModel $model) {
-		if (Member::currentUserID() && $request->getVar('clear') && Permission::check('ADMIN')) {
+		if ($request->getVar('clear') && Member::currentUserID() && Permission::check('ADMIN')) {
 			$key = trim($request->getVar('url'), '/');
 			$key = (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '') . '/' . $key;
 			$item = $this->dynamicCache->get($key);
