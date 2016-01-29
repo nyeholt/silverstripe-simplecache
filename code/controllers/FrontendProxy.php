@@ -64,6 +64,13 @@ class FrontendProxy {
 	 */
 	protected $enabled = true;
 	
+	/**
+	 * Regex matches for whether certain hostnames are enabled or not for caching
+	 *
+	 * @var boolean
+	 */
+	protected $blacklist = array();
+	
 	public function __construct(
 		$staticCache = null, $dynamicCache = null, 
 		$urlRules = null, $bypassCookies = array(),
@@ -77,12 +84,10 @@ class FrontendProxy {
 		$this->urlRules = $urlRules;
 		$this->bypassCookies = $bypassCookies;
 		
-		$this->cacheGetVars = defined('CACHE_ALLOW_GET_VARS') && CACHE_ALLOW_GET_VARS;
-		$this->ignoreGetVars = defined('CACHE_IGNORE_GET_VARS') && CACHE_IGNORE_GET_VARS;
 	}
 	
 	public function checkIfEnabled($host, $url) {
-		$fullUrl = "$host/$url/";
+		$fullUrl = trim("$host/$url/", '/');
 		
 		foreach ($this->bypassCookies as $cookie) {
 			if (isset($_COOKIE[$cookie])) {
@@ -103,8 +108,15 @@ class FrontendProxy {
 			return;
 		}
 		
-		
-		
+		if (count($this->blacklist)) {
+			foreach ($this->blacklist as $check) {
+				if (preg_match ('{' . $check . '}', $fullUrl)) {
+					$this->enabled = false;
+					return false;
+				}
+			}
+		}
+
 		if (count($_POST)) {
 			$this->enabled = false;
 			return;
@@ -118,7 +130,7 @@ class FrontendProxy {
 		
 		$url = strlen($url) ? $url : 'index';
 		$url = $this->urlForCaching($url);
-
+		
 		$key = "$host/$url";
 
 		if ($this->staticCache) {
@@ -144,20 +156,24 @@ class FrontendProxy {
 		}
 
 		if ($this->urlRules) {
-			return $this->expiryForUrl($url) > -1;
+			return $this->expiryForUrl($url, $host) > -1;
 		}
 	}
 	
-	public function expiryForUrl($url) {
+	public function expiryForUrl($url, $host = null) {
 		$url = $this->urlForCaching($url);
-		$config = $this->configForUrl($url);
+		$config = $this->configForUrl($url, $host);
 		return isset($config['expiry']) ? $config['expiry'] : -1;
 	}
 
-	public function configForUrl($url) {
+	public function configForUrl($url, $host = null) {
 		$config = array('expiry' => -1);
 		foreach ($this->urlRules as $segment => $options) {
-			if (preg_match('{' . $segment . '}', $url, $matches)) {
+			$comparison = $url;
+			if (is_array($options) && isset($options['include_host']) && $options['include_host']) {
+				$comparison = $host . '/' . $url;
+			}
+			if (preg_match('{' . $segment . '}', $comparison, $matches)) {
 				// if we've got an array, it means we've got some config options
 				if (is_array($options)) {
 					$config = array_merge($config, $options);
@@ -233,7 +249,7 @@ class FrontendProxy {
 		$key = "$host/$url";
 		define('PROXY_CACHE_GENERATING', true);
 		
-		$config = $this->configForUrl($url);
+		$config = $this->configForUrl($url, $host);
 		$expiry = isset($config['expiry']) ? $config['expiry'] : -1;
 
 		if ($expiry < 0) {
@@ -324,5 +340,20 @@ class FrontendProxy {
 			$cache = call_user_func_array(array('SimpleCache', 'get_cache'), $params);
 			return $cache->get($key);
 		}
+	}
+
+	public function setCacheGetVars($v) {
+		$this->cacheGetVars = $v;
+		return $this;
+	}
+	
+	public function setIgnoreGetVars($v) {
+		$this->ignoreGetVars = $v;
+		return $this;
+	}
+	
+	public function setBlacklist($v) {
+		$this->blacklist = $v;
+		return $this;
 	}
 }

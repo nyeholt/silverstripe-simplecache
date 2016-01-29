@@ -72,11 +72,17 @@ if (defined('USE_PROXY') && USE_PROXY) {
 	
 	$cookies = defined('PROXY_BYPASS_COOKIES') ? explode(',', PROXY_BYPASS_COOKIES) : array();
 	$url_config = isset($PROXY_CACHE_URLS) ? $PROXY_CACHE_URLS : null;
+	$blacklist = isset($PROXY_CACHE_BLACKLIST) ? $PROXY_CACHE_BLACKLIST : array();
 	
 	$proxyclass = defined('PROXY_CLASS') ? PROXY_CLASS : 'FrontendProxy';
 
 	$proxy = new $proxyclass($publisher, $dynamic, $url_config, $cookies);
 	
+	$proxy
+		->setCacheGetVars(defined('CACHE_ALLOW_GET_VARS') && CACHE_ALLOW_GET_VARS)
+		->setIgnoreGetVars(defined('CACHE_IGNORE_GET_VARS') && CACHE_IGNORE_GET_VARS)
+		->setBlacklist($blacklist);
+
 	$host = $_SERVER['HTTP_HOST'];
 	$relativeUrl = trim($url, '/');
 	
