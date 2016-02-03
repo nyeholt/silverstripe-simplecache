@@ -44,6 +44,13 @@ class SimpleCachePublisher {
 	 */
 	public $useJobs = true;
 	
+	/**
+	 * If useJobs = false, we _may_ still opt to use them of the jobThreshold is set
+	 * 
+	 * @var int
+	 */
+	public $jobThreshold = 0;
+	
 	
 	public function setStaticBaseUrl($value) {
 		$this->staticBaseUrl = $value;
@@ -74,7 +81,7 @@ class SimpleCachePublisher {
 						if (Director::is_relative_url($url)) {
 							$url = Director::absoluteURL($url);
 						}
-						$pageUrls[] = $url;
+						$specificUrls[] = $url;
 					}
 				} else {
 					$specificUrls = array($object->AbsoluteLink());
@@ -83,7 +90,13 @@ class SimpleCachePublisher {
 
 			if (count($specificUrls)) {
 				$object->extend('updateAffectedPages', $specificUrls);
-				$this->publishUrls($specificUrls);
+				
+				if (class_exists('AbstractQueuedJob') && $this->jobThreshold && count($specificUrls) >= $this->jobThreshold) {
+					$job = new SimpleCachePublishingJob($object, $specificUrls);
+					singleton('QueuedJobService')->queueJob($job);
+				} else {
+					$this->publishUrls($specificUrls);
+				}
 			}
 
 			$this->recacheFragments($object);
