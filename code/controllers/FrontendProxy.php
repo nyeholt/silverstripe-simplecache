@@ -329,7 +329,8 @@ class FrontendProxy {
 		}
 	
 		// check for any cached values
-		$content = preg_replace('|<base href="(https?)://(.*?)/"|', '<base href="$1://' . $_SERVER['HTTP_HOST'] . BASE_URL . '/"', $this->currentItem->Content);
+		$protocol = $this->isHttps() ? 'https' : 'http';
+		$content = preg_replace('|<base href="(https?)://(.*?)/"|', '<base href="' . $protocol . '://' . $_SERVER['HTTP_HOST'] . BASE_URL . '/"', $this->currentItem->Content);
 		echo preg_replace_callback('/<!--SimpleCache::(.*?)-->/', array($this, 'getCachedValue'), $content);
 	}
 	
@@ -355,5 +356,41 @@ class FrontendProxy {
 	public function setBlacklist($v) {
 		$this->blacklist = $v;
 		return $this;
+	}
+	
+	protected function isHttps() {
+		$return = false;
+		if (defined('PROXY_CACHE_PROTOCOL')) {
+			$return = (PROXY_CACHE_PROTOCOL == 'https');
+		} else if(
+			TRUSTED_PROXY
+			&& isset($_SERVER['HTTP_X_FORWARDED_PROTO'])
+			&& strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) == 'https'
+		) {
+			// Convention for (non-standard) proxy signaling a HTTPS forward,
+			// see https://en.wikipedia.org/wiki/List_of_HTTP_header_fields
+			$return = true;
+		} else if(
+			TRUSTED_PROXY
+			&& isset($_SERVER['HTTP_X_FORWARDED_PROTOCOL'])
+			&& strtolower($_SERVER['HTTP_X_FORWARDED_PROTOCOL']) == 'https'
+		) {
+			// Less conventional proxy header
+			$return = true;
+		} else if(
+			isset($_SERVER['HTTP_FRONT_END_HTTPS'])
+			&& strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) == 'on'
+		) {
+			// Microsoft proxy convention: https://support.microsoft.com/?kbID=307347
+			$return = true;
+		} else if((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off')) {
+			$return = true;
+		} else if(isset($_SERVER['SSL'])) {
+			$return = true;
+		} else {
+			$return = false;
+		}
+
+		return $return;
 	}
 }
