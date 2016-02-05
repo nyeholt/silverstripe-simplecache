@@ -240,6 +240,60 @@ class SimpleMemcachedBasedCacheStore implements SimpleCacheStore {
 
 
 /**
+ * A cache store that uses redis as its backend. Requires
+ * predis/predis to be included somewhere
+ * 
+ * @author Marcus Nyeholt <marcus@silverstripe.com.au>
+ *
+ */
+class RedisBasedCacheStore implements SimpleCacheStore {
+	protected $config = null;
+	
+	protected $cache;
+	
+	protected $name = '';
+	
+	public function __construct($name = 'default', $config = null) {
+		if ($config) {
+			$this->config = $config;
+		}
+		
+		if (!class_exists('Predis\Client')) {
+			require_once BASE_PATH . '/vendor/predis/predis/src/Autoloader.php';
+			Predis\Autoloader::register();
+		}
+
+		$this->cache = new Predis\Client($this->config);
+		$this->name = $name;
+	}
+
+	public function store($key, $data) {
+		$this->cache->set($this->name.'-'.$key, $data);
+	}
+
+	public function get($key) {
+		return $this->cache->get($this->name.'-'.$key);
+	}
+
+	public function delete($key) {
+		$this->cache->expire($this->name.'-'.$key);
+	}
+
+	public function clear() {
+		$this->cache->flushdb();
+	}
+	
+	public function getUnderlyingCache() {
+		return $this->cache;
+	}
+
+	public function count() {
+		return $this->cache->dbsize();
+	}
+
+}
+
+/**
  * A cache store definition
  * 
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
