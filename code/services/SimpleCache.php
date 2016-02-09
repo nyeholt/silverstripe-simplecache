@@ -17,6 +17,8 @@ class SimpleCache {
 
 	const HIT_KEY = '__SC_HIT';
 	const MISS_KEY = '__SC_MISS';
+    
+    private static $default_caches = array('PublisherCache', 'DynamicPublisherCache', 'FragmentCache');
 	
 	/**
 	 * The cache store to use for actually putting and retrieving items from
@@ -86,6 +88,22 @@ class SimpleCache {
 		return self::get_cache('default');
 	}
 	
+    /**
+     * Registers caches in the injector
+     */
+    public static function register_caches($cacheNames = null) {
+        if (!$cacheNames) {
+            $cacheNames = self::$default_caches;
+        }
+
+        foreach ($cacheNames as $cacheName) {
+            $cache = self::get_cache($cacheName);
+            if ($cache) {
+                Injector::inst()->registerService($cache, $cacheName);
+            }
+        }
+    }
+    
 	/**
 	 * Get a named cache
 	 *
