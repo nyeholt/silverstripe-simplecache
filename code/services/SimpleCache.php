@@ -106,7 +106,14 @@ class SimpleCache {
 				$storeOpts = $conf['store_options'];
 				$config = isset($conf['cache_options']) ? $conf['cache_options'] : $config;
 				$reflector = new ReflectionClass($type);
-				$store = $reflector->newInstanceArgs($storeOpts);
+                
+                // note that this bit is to be backwards 
+                $args = array(
+                    $name,
+                    $storeOpts
+                );
+                
+				$store = $reflector->newInstanceArgs($args);
 			}
 
 			self::$instances[$name] = new SimpleCache($store, $config);
@@ -197,7 +204,7 @@ class SimpleCache {
 		}
 
 		$data = serialize($entry);
-		$this->store->store($key, $data);
+		$this->store->store($key, $data, $expiry);
 		
 		// if we've got tags, add this element to the list of keys stored for
 		// a given tag

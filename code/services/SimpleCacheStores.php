@@ -10,7 +10,15 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 	public static $cache_location = null;
 	protected $location = '';
 	
-	public function __construct($location = null) {
+	public function __construct($name = 'default', $config = null) {
+        $location = '';
+
+        if (is_array($config) && isset($config[0])) {
+            $location = $config[0];
+        }
+        if (is_array($config) && isset($config['path'])) {
+            $location = $config['path'];
+        }
 		$this->location = $location ? $location : self::$cache_location;
 	}
 
@@ -267,8 +275,11 @@ class RedisBasedCacheStore implements SimpleCacheStore {
 		$this->name = $name;
 	}
 
-	public function store($key, $data) {
+	public function store($key, $data, $expiry = null) {
 		$this->cache->set($this->name.'-'.$key, $data);
+        if ($expiry > 0) {
+            $this->cache->expire($this->name.'-'.$key, $expiry);
+        }
 	}
 
 	public function get($key) {
