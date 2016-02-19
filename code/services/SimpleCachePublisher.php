@@ -11,6 +11,7 @@ class SimpleCachePublisher {
 	const CACHE_PUBLISH = '__cache_publish';
 	
 	public $excludeTypes = array(
+        'Site',
 		'UserDefinedForm',
 		'SolrSearchPage',
 		'RedirectorPage',
