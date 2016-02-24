@@ -287,7 +287,7 @@ class RedisBasedCacheStore implements SimpleCacheStore {
 	}
 
 	public function delete($key) {
-		$this->cache->expire($this->name.'-'.$key);
+		$this->cache->del($this->name.'-'.$key);
 	}
 
 	public function clear() {
