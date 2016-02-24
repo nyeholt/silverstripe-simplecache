@@ -63,7 +63,21 @@ class FrontendProxy {
 	 * @var boolean
 	 */
 	protected $enabled = true;
+    
+    /**
+     * A list of hostnames that should retrieve cached data from a _different_ host
+     * 
+     * @var array
+     */
+    protected $remapHosts;
 	
+    /**
+     * A Class name for a class to use for rewriting content for cache responses
+     *
+     * @var string
+     */
+    protected $contentRewriter;
+    
 	/**
 	 * Regex matches for whether certain hostnames are enabled or not for caching
 	 *
@@ -83,7 +97,6 @@ class FrontendProxy {
 		$this->dynamicCache = $dynamicCache;
 		$this->urlRules = $urlRules;
 		$this->bypassCookies = $bypassCookies;
-		
 	}
 	
 	public function checkIfEnabled($host, $url) {
@@ -123,7 +136,7 @@ class FrontendProxy {
 		}
 	}
 
-	public function urlIsCached($host, $url) {
+	public function urlIsCached($host, $url, $checkingRemap = false) {
 		if (!$this->enabled) {
 			return false;
 		}
@@ -137,7 +150,7 @@ class FrontendProxy {
 			$this->currentItem = $this->staticCache->get($key);
 			if ($this->currentItem) {
 				$this->headers[] = 'X-SilverStripe-Cache: hit at '.@date('r');
-			}
+			} 
 		}
 
 		if (!$this->currentItem && $this->dynamicCache && $this->canCache($host, $url)) {
@@ -146,6 +159,13 @@ class FrontendProxy {
 				$this->headers[] = 'X-SilverStripe-Cache: gen-hit at '.@date('r');
 			}
 		}
+        
+        if (!$this->currentItem && !$checkingRemap) {
+            $remapped = $this->remappedHost($host);
+            if ($remapped) {
+                return $this->urlIsCached($remapped, $url, true);
+            }
+        }
 		
 		return !is_null($this->currentItem);
 	}
@@ -330,7 +350,15 @@ class FrontendProxy {
 	
 		// check for any cached values
 		$protocol = $this->isHttps() ? 'https' : 'http';
-		$content = preg_replace('|<base href="(https?)://(.*?)/"|', '<base href="' . $protocol . '://' . $_SERVER['HTTP_HOST'] . BASE_URL . '/"', $this->currentItem->Content);
+        $content = '';
+        if ($this->contentRewriter) {
+            $updater = new $this->contentRewriter;
+            $remapped = $this->remappedHost($host);
+            $content = $updater->rewrite($this->currentItem->Content, $protocol, $_SERVER['HTTP_HOST'], $remapped);
+        } else {
+            $content = preg_replace('|<base href="(https?)://(.*?)/"|', '<base href="' . $protocol . '://' . $_SERVER['HTTP_HOST'] . BASE_URL . '/"', $this->currentItem->Content);
+        }
+		
 		echo preg_replace_callback('/<!--SimpleCache::(.*?)-->/', array($this, 'getCachedValue'), $content);
 	}
 	
@@ -358,6 +386,28 @@ class FrontendProxy {
 		return $this;
 	}
 	
+    public function setRemapHosts($v) {
+        $this->remapHosts = $v;
+        return $this;
+    }
+    
+    public function setContentRewriter($v) {
+        $this->contentRewriter = $v;
+        return $this;
+    }
+    
+    /**
+     * If found, return the host name that should be used for caching a particular piece of content
+     * 
+     * @param string $host
+     * @return string
+     */
+    protected function remappedHost($host) {
+        if (isset($this->remapHosts[$host])) {
+            return $this->remapHosts[$host];
+        }
+    }
+
 	protected function isHttps() {
 		$return = false;
 		if (defined('PROXY_CACHE_PROTOCOL')) {

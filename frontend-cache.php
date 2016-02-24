@@ -82,6 +82,13 @@ if (defined('USE_PROXY') && USE_PROXY) {
 		->setCacheGetVars(defined('CACHE_ALLOW_GET_VARS') && CACHE_ALLOW_GET_VARS)
 		->setIgnoreGetVars(defined('CACHE_IGNORE_GET_VARS') && CACHE_IGNORE_GET_VARS)
 		->setBlacklist($blacklist);
+    
+    if (isset($PROXY_CACHE_REMAP)) {
+        $proxy->setRemapHosts($PROXY_CACHE_REMAP);
+    }
+    if (defined('PROXY_CONTENT_REWRITER')) {
+        $proxy->setContentRewriter(PROXY_CONTENT_REWRITER);
+    }
 
 	$host = $_SERVER['HTTP_HOST'];
 	$relativeUrl = trim($url, '/');
