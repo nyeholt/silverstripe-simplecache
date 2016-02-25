@@ -141,7 +141,6 @@ class FrontendProxy {
 			return false;
 		}
 		
-		$url = strlen($url) ? $url : 'index';
 		$url = $this->urlForCaching($url);
 		
 		$key = "$host/$url";
@@ -261,6 +260,8 @@ class FrontendProxy {
 			$url .= '/ajax';
 		}
 
+        $url = strlen($url) ? $url : 'index';
+
 		return $url;
 	}
 
@@ -358,7 +359,7 @@ class FrontendProxy {
         } else {
             $content = preg_replace('|<base href="(https?)://(.*?)/"|', '<base href="' . $protocol . '://' . $_SERVER['HTTP_HOST'] . BASE_URL . '/"', $this->currentItem->Content);
         }
-		
+
 		echo preg_replace_callback('/<!--SimpleCache::(.*?)-->/', array($this, 'getCachedValue'), $content);
 	}
 	
