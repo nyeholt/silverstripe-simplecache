@@ -279,6 +279,7 @@ class FrontendProxy {
 
 		ob_start();
 		include BASE_PATH .'/framework/main.php';
+        
 		$toCache = new stdClass();
 		$toCache->Content = ob_get_clean();
 		$toCache->LastModified = date('Y-m-d H:i:s');
@@ -291,9 +292,16 @@ class FrontendProxy {
 			}
 		}
 		$toCache->Age = $expiry;
+        
+        $cacheableResponse = true;
+        
+        if (function_exists('http_response_code')) {
+            $response = http_response_code();
+            $cacheableResponse = $response >= 200 && $response < 300;
+        }
 
 		// store the content for this 
-		if ($this->dynamicCache && strlen($toCache->Content)) {
+		if ($cacheableResponse && $this->dynamicCache && strlen($toCache->Content)) {
 			$tags = isset($config['tags']) ? $config['tags'] : null;
 			$this->dynamicCache->store($key, $toCache, $expiry, $tags);
 			$this->headers[] = 'X-SilverStripe-Cache: miss-gen at '.@date('r') . ' on ' . $key;
