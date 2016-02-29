@@ -74,6 +74,16 @@ class SimpleCachePublisher {
 			$job = new SimpleCachePublishingJob($object, $specificUrls);
 			singleton('QueuedJobService')->queueJob($job);
 		} else {
+            $currentBase = Config::inst()->get('Director', 'alternate_base_url');
+            
+            if ($object->SiteID && class_exists('Multisites')) {
+                // let's set the base directly
+                $base = $object->Site()->getUrl();
+                if ($base != $currentBase) {
+                    Config::inst()->update('Director', 'alternate_base_url', $base);
+                }
+            }
+            
 			if (!$specificUrls) {
 				$specificUrls = array();
 				if ($object->hasMethod('pagesAffectedByChanges')) {
@@ -101,6 +111,7 @@ class SimpleCachePublisher {
 			}
 
 			$this->recacheFragments($object);
+            Config::inst()->update('Director', 'alternate_base_url', $currentBase);
 		}
 	}
 	
