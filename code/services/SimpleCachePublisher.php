@@ -126,6 +126,13 @@ class SimpleCachePublisher {
 		if (count($nocache) && min($nocache) == 0) {
 			return true;
 		}
+        
+        if ($object->SiteID && class_exists('Multisites')) {
+            $site = $object->Site();
+            if ($site && $site->ID && $site->DisableSiteCache) {
+                return true;
+            }
+        }
 		
 		if (method_exists($object, 'canCache') && !$object->canCache()) {
 			return true;
@@ -145,7 +152,7 @@ class SimpleCachePublisher {
 	}
 	
 	protected function publishUrls($urls, $keyPrefix = '', $domain = null) {
-		if (defined('PROXY_CONFIG_FILE') && !isset($PROXY_CACHE_HOSTMAP)) {
+		if (defined('PROXY_CONFIG_FILE') && !isset(SimpleCache::$cache_configs['PublisherCache'])) {
 			include_once BASE_PATH . '/' . PROXY_CONFIG_FILE;
 		}
 		

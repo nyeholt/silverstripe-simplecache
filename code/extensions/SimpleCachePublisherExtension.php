@@ -48,10 +48,12 @@ class SimpleCachePublisherExtension extends DataExtension {
 		if (SiteConfig::current_site_config()->DisableSiteCache) {
 			return;
 		}
+        if (class_exists('Multisites') && Multisites::inst()->getActiveSite()->DisableSiteCache) {
+            return;
+        }
 		$this->cachePublisher->publishDataObject($this->owner);
 	}
-	
-	
+
 	public function updateAffectedPages(&$urlsToPublish) {
 		if ($this->owner->hasMethod('DependentPages')) {
 			foreach($this->owner->DependentPages(false) as $page) {
@@ -64,6 +66,9 @@ class SimpleCachePublisherExtension extends DataExtension {
 		if (SiteConfig::current_site_config()->DisableSiteCache) {
 			return;
 		}
+        if (class_exists('Multisites') && Multisites::inst()->getActiveSite()->DisableSiteCache) {
+            return;
+        }
 		$this->cachePublisher->publishDataObject($this->owner);
 	}
 

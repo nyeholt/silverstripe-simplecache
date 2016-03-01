@@ -16,6 +16,10 @@ class SimpleCachePublishingJob extends AbstractQueuedJob {
 	
 	public function __construct($object = null, $urls = null) {
 		if ($object) {
+            if (singleton('SimpleCachePublisher')->dontCache($object)) {
+                $this->totalSteps = 1;
+                return;
+            }
 			$collection = null;
 			if ($object instanceof DataList) {
 				$collection = $object;
