@@ -291,6 +291,9 @@ class FrontendProxy {
 				$expiry = $headerExpiry;
 			}
 		}
+        
+        $toCache->ContentType = $this->contentTypeFromHeaders($headers);
+        
 		$toCache->Age = $expiry;
         
         $cacheableResponse = true;
@@ -309,7 +312,16 @@ class FrontendProxy {
 
 		$this->currentItem = $toCache;
 	}
-	
+    
+    protected function contentTypeFromHeaders($headers) {
+        foreach ($headers as $header) {
+            if (stripos($header, 'content-type') !== false) {
+                return $header;
+            }
+        }
+        return 'text/html';
+    }
+
 	/**
 	 * Try and find the max-age from the list of headers
 	 * 
