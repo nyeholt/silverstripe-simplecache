@@ -316,7 +316,7 @@ class FrontendProxy {
     protected function contentTypeFromHeaders($headers) {
         foreach ($headers as $header) {
             if (stripos($header, 'content-type') !== false) {
-                return $header;
+                return trim(substr($header, strpos($header, ':') + 1));
             }
         }
         return 'text/html';
