@@ -300,11 +300,11 @@ class FrontendProxy {
         
         if (function_exists('http_response_code')) {
             $response = http_response_code();
-            $cacheableResponse = $response >= 200 && $response < 300;
+            $this->enabled = $response >= 200 && $response < 300;
         }
 
 		// store the content for this 
-		if ($cacheableResponse && $this->dynamicCache && strlen($toCache->Content)) {
+		if ($this->enabled && $this->dynamicCache && strlen($toCache->Content)) {
 			$tags = isset($config['tags']) ? $config['tags'] : null;
 			$this->dynamicCache->store($key, $toCache, $expiry, $tags);
 			$this->headers[] = 'X-SilverStripe-Cache: miss-gen at '.@date('r') . ' on ' . $key;
@@ -340,15 +340,36 @@ class FrontendProxy {
 		return $minAge;
 	}
 	
+    /**
+     * Serve the content item wrapped by the proxy. 
+     * 
+     * Note that _IF_ we're here and 'enabled' is false, it is likely the
+     * result of the gen-cache process failing to get a valid content type, in which
+     * case we don't output extra headers. 
+     * 
+     * @param string $host
+     * @param string $url
+     * @return boolean
+     */
 	public function serve($host, $url) {
 		if (!$this->currentItem) {
 			return false;
 		}
 		
-		header("Cache-Control: no-cache, max-age=0, must-revalidate");
-		header("Edge-Control: !no-store, max-age=" . $this->currentItem->Age);
-		header("Expires: " . gmdate('D, d M Y H:i:s', time() + $this->currentItem->Age) . ' GMT');
-		header("Last-modified: " . gmdate('D, d M Y H:i:s', strtotime($this->currentItem->LastModified)) . ' GMT');
+        if ($this->enabled) {
+            header("Cache-Control: no-cache, max-age=0, must-revalidate");
+            header("Edge-Control: !no-store, max-age=" . $this->currentItem->Age);
+            header("Expires: " . gmdate('D, d M Y H:i:s', time() + $this->currentItem->Age) . ' GMT');
+            header("Last-modified: " . gmdate('D, d M Y H:i:s', strtotime($this->currentItem->LastModified)) . ' GMT');
+            
+            if (isset($this->currentItem->ContentType) && strlen($this->currentItem->ContentType)) {
+                header('Content-type: ' . $this->currentItem->ContentType);
+            }
+            
+            foreach ($this->headers as $h) {
+                header($h);
+            }
+        }
 		
 		// if there's an if-modified-since header 
 		if(isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
@@ -360,15 +381,7 @@ class FrontendProxy {
 //				exit;
 //			}
 		}
-		
-		if (isset($this->currentItem->ContentType) && strlen($this->currentItem->ContentType)) {
-			header('Content-type: ' . $this->currentItem->ContentType);
-		}
 
-		foreach ($this->headers as $h) {
-			header($h);
-		}
-	
 		// check for any cached values
 		$protocol = $this->isHttps() ? 'https' : 'http';
         $content = '';
