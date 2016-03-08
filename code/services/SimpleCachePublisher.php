@@ -80,6 +80,10 @@ class SimpleCachePublisher {
                 // let's set the base directly
                 $base = $object->Site()->getUrl();
                 if ($base != $currentBase) {
+                    if(substr($base, -1) !== '/') {
+                        // ensures base URL has a trailing slash 
+                        $base .= '/';
+                    }
                     Config::inst()->update('Director', 'alternate_base_url', $base);
                 }
             }

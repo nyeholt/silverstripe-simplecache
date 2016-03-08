@@ -36,6 +36,11 @@ class SimpleCachePublishingJob extends AbstractQueuedJob {
 				if ($object->SiteID && class_exists('Multisites')) {
 					// let's set the base directly
 					$base = $object->Site()->getUrl();
+                    
+                    if(substr($base, -1) !== '/') {
+                        // ensures base URL has a trailing slash 
+                        $base .= '/';
+                    }
 					Config::inst()->update('Director', 'alternate_base_url', $base);
 				}
 				$stage = Versioned::current_stage();
