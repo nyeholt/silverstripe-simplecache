@@ -147,18 +147,22 @@ class FrontendProxy {
 
 		if ($this->staticCache) {
 			$this->currentItem = $this->staticCache->get($key);
-			if ($this->currentItem) {
+			if ($this->currentItem && strlen($this->currentItem->Content)) {
 				$this->headers[] = 'X-SilverStripe-Cache: hit at '.@date('r');
 			} 
 		}
 
 		if (!$this->currentItem && $this->dynamicCache && $this->canCache($host, $url)) {
 			$this->currentItem = $this->dynamicCache->get($key);
-			if ($this->currentItem) {
+			if ($this->currentItem && strlen($this->currentItem->Content)) {
 				$this->headers[] = 'X-SilverStripe-Cache: gen-hit at '.@date('r');
 			}
 		}
         
+        if ($this->currentItem && !strlen($this->currentItem->Content)) {
+            $this->currentItem->Content = null;
+        }
+
         if (!$this->currentItem && !$checkingRemap) {
             $remapped = $this->remappedHost($host);
             if ($remapped) {
