@@ -31,16 +31,16 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 	public function get($key) {
 		$data = null;
 		$location = $this->getDiskLocation($key, false);
-		if (file_exists($location)) {
-			$data = file_get_contents($location);
+		if (is_readable($location) && is_file($location)) {
+			$data = @file_get_contents($location);
 		}
 		return $data;
 	}
 
 	public function delete($key) {
 		$location = $this->getDiskLocation($key);
-		if (file_exists($location)) {
-			unlink($location);
+		if (is_readable($location) && is_file($location)) {
+			@unlink($location);
 		}
 	}
 
@@ -68,7 +68,7 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 	private function getDiskLocation($key, $create = true) {
 		$friendly = preg_replace('/[^A-Z0-9_-]+/i', '_', $key);
 		$name = md5($key) . $friendly;
-		$dir = $this->getCacheLocation() . '/' . mb_substr($name, 0, 3);
+		$dir = rtrim($this->getCacheLocation(), '/') . '/' . mb_substr($name, 0, 3);
 		if (!is_dir($dir) && $create) {
 			mkdir($dir, 0770, true);
 		}
