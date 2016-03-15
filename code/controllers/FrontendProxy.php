@@ -170,7 +170,7 @@ class FrontendProxy {
             }
         }
 		
-		return is_object($this->currentItem);
+		return is_object($this->currentItem) && strlen($this->currentItem->Content);
 	}
 	
 	public function canCache($host, $url) {
