@@ -160,7 +160,7 @@ class FrontendProxy {
 		}
         
         if ($this->currentItem && !strlen($this->currentItem->Content)) {
-            $this->currentItem->Content = null;
+            $this->currentItem = null;
         }
 
         if (!$this->currentItem && !$checkingRemap) {
@@ -170,7 +170,7 @@ class FrontendProxy {
             }
         }
 		
-		return !is_null($this->currentItem);
+		return is_object($this->currentItem);
 	}
 	
 	public function canCache($host, $url) {
