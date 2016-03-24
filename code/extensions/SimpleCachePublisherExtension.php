@@ -48,8 +48,15 @@ class SimpleCachePublisherExtension extends DataExtension {
 		if (SiteConfig::current_site_config()->DisableSiteCache) {
 			return;
 		}
-        if (class_exists('Multisites') && Multisites::inst()->getActiveSite()->DisableSiteCache) {
-            return;
+        if (class_exists('Multisites')) {
+            if ($this->owner->SiteID) {
+                $site = $this->owner->Site();
+            } else {
+                $site = Multisites::inst()->getActiveSite();
+            }
+            if ($site && $site->DisableSiteCache) {
+                return;
+            }
         }
 		$this->cachePublisher->publishDataObject($this->owner);
 	}
