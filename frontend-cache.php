@@ -91,7 +91,8 @@ if (defined('USE_PROXY') && USE_PROXY) {
     }
 
 	$host = $_SERVER['HTTP_HOST'];
-	$relativeUrl = trim($url, '/');
+    $trimFunc = defined('PROXY_TRIM_FUNC') ? PROXY_TRIM_FUNC : 'trim';
+	$relativeUrl = $trimFunc($url, '/');
 	
 	$proxy->checkIfEnabled($host, $relativeUrl);
 	

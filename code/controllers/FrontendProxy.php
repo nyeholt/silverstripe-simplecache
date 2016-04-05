@@ -100,7 +100,7 @@ class FrontendProxy {
 	}
 	
 	public function checkIfEnabled($host, $url) {
-		$fullUrl = trim("$host/$url/", '/');
+		$fullUrl = "$host/$url";
 		
 		foreach ($this->bypassCookies as $cookie) {
 			if (isset($_COOKIE[$cookie])) {
