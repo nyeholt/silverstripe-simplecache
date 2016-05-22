@@ -4,21 +4,9 @@
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
 class SimpleCacheAdmin extends LeftAndMain {
-	static $url_segment = 'simplecache';
-	static $url_rule = '/$Action/$ID';
-	static $menu_title = 'Simple cache';
-	
-	
-	static $caches = array(
-		
-	);
-	
-	/**
-	 *
-	 */
-	public static function add_caches() {
-		
-	}
+	private static $url_segment = 'simplecache';
+	private static $url_rule = '/$Action/$ID';
+	private static $menu_title = 'Simple cache';
 	
 	public function getEditForm($id = null, $fields = null) {
 		$tabs = new TabSet('Root', new Tab('Main'));
