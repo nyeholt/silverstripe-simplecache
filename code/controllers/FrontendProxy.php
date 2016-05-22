@@ -223,13 +223,20 @@ class FrontendProxy {
 					// if there's some capture groups in the regex, see if any of our tags are meant to match
 					if (count($matches) > 1 && isset($config['tags'])) {
 						foreach ($config['tags'] as $index => $tag) {
+                            // backwards compatibility
 							if (is_numeric($tag)) {
-								if (isset($matches[(int) $tag])) {
-									$config['tags'][$index] = $matches[$tag];
+								$tag = '$' . $tag;
+							}
+
+                            $numero = strpos($tag, '$');
+                            if ($numero !== false) {
+                                $item = $tag{$numero + 1};
+                                if (isset($matches[(int) $item])) {
+									$config['tags'][$index] = str_replace('$' . $item, $matches[$item], $tag);
 								} else {
 									unset($config['tags'][$index]);
 								}
-							}
+                            }
 						}
 					}
 				} else {
