@@ -347,6 +347,7 @@ class SimpleCache {
 	public function deleteByTag($tag) {
 		$tagKey = $this->tagKey($tag);
 		$keys = $this->get($tagKey);
+        $num = count($keys);
 		if ($keys) {
 			foreach ($keys as $key => $dummy) {
 				$this->delete($key);
@@ -354,6 +355,7 @@ class SimpleCache {
 		}
 		
 		$this->delete($tagKey);
+        return $num;
 	}
 
 	/**
