@@ -84,6 +84,13 @@ class FrontendProxy {
 	 * @var boolean
 	 */
 	protected $blacklist = array();
+    
+    /**
+     * A list of headers to _not_ proxy in dynamic cached requests
+     *
+     * @var array
+     */
+    protected $ignoreHeaders = array();
 	
 	public function __construct(
 		$staticCache = null, $dynamicCache = null, 
@@ -303,7 +310,17 @@ class FrontendProxy {
 			}
 		}
         
-        $toCache->ContentType = $this->contentTypeFromHeaders($headers);
+        $storedHeaders = array();
+        // store the headers as k => v
+        foreach ($headers as $header) {
+            $parts = explode(':', $header, 2);
+            if (count($parts) == 2) {
+                $storedHeaders[strtolower($parts[0])] = $parts[1];
+            }
+        }
+        if (count($storedHeaders)) {
+            $toCache->Headers = $storedHeaders;
+        }
         
 		$toCache->Age = $expiry;
         
@@ -323,15 +340,6 @@ class FrontendProxy {
 
 		$this->currentItem = $toCache;
 	}
-    
-    protected function contentTypeFromHeaders($headers) {
-        foreach ($headers as $header) {
-            if (stripos($header, 'content-type') !== false) {
-                return trim(substr($header, strpos($header, ':') + 1));
-            }
-        }
-        return 'text/html';
-    }
 
 	/**
 	 * Try and find the max-age from the list of headers
@@ -368,15 +376,22 @@ class FrontendProxy {
 		}
 		
         if ($this->enabled) {
-            header("Cache-Control: no-cache, max-age=0, must-revalidate");
-            header("Edge-Control: !no-store, max-age=" . $this->currentItem->Age);
-            header("Expires: " . gmdate('D, d M Y H:i:s', time() + $this->currentItem->Age) . ' GMT');
-            header("Last-modified: " . gmdate('D, d M Y H:i:s', strtotime($this->currentItem->LastModified)) . ' GMT');
+            $responseHeaders = $this->currentItem->Headers;
+            $outIfNot = function ($name, $value) use ($responseHeaders) {
+                if (!isset($responseHeaders[strtolower($name)])) {
+                    header($name, $value);
+                }
+            };
             
-            if (isset($this->currentItem->ContentType) && strlen($this->currentItem->ContentType)) {
-                header('Content-type: ' . $this->currentItem->ContentType);
+            $outIfNot('Cache-Control', 'no-cache, max-age=0, must-revalidate');
+            $outIfNot('Edge-Control', "!no-store, max-age=" . $this->currentItem->Age);
+            $outIfNot('Expires', gmdate('D, d M Y H:i:s', time() + $this->currentItem->Age) . ' GMT');
+            $outIfNot('Last-modified', gmdate('D, d M Y H:i:s', strtotime($this->currentItem->LastModified)) . ' GMT');
+            $outIfNot('Content-type', 'text/html');
+            
+            foreach ($responseHeaders as $headerName => $headerValue) {
+                header($headerName . ': ' . $headerValue);
             }
-            
             foreach ($this->headers as $h) {
                 header($h);
             }
