@@ -7,6 +7,7 @@
 class SimpleCachePublisherExtension extends DataExtension {
 	
 	public static $db = array(
+        'NeverCache'        => 'Boolean',       // regardless of optin status
 		'CacheThis'			=> 'Boolean',
 		'DontCacheThis'		=> 'Boolean'
 	);
@@ -25,11 +26,13 @@ class SimpleCachePublisherExtension extends DataExtension {
 	public function updateSettingsFields(FieldList $fields) {
 		if ($this->cachePublisher->getOptInCaching()) {
 			$fields->addFieldToTab('Root.Cache', new LiteralField('OptInHeader', _t('SimpleCache.OPT_IN', '<strong>You must choose to have this page cached on publish</strong>')));
-			$fields->addFieldToTab('Root.Cache', new CheckboxField('CacheThis', _t('SimpleCache.CACHE_THIS', 'Cache this item')));
+			$fields->addFieldToTab('Root.Cache', new CheckboxField('CacheThis', _t('SimpleCache.CACHE_THIS', 'Cache this item on publish')));
 		} else {
 			$fields->addFieldToTab('Root.Cache', new LiteralField('OptInHeader', _t('SimpleCache.OPT_OUT', '<strong>You must choose to NOT cache this page</strong>')));
-			$fields->addFieldToTab('Root.Cache', new CheckboxField('DontCacheThis', _t('SimpleCache.DONT_CACHE_THIS', 'Do NOT cache this item')));
+			$fields->addFieldToTab('Root.Cache', new CheckboxField('DontCacheThis', _t('SimpleCache.DONT_CACHE_THIS', 'Do NOT cache this item on publish')));
 		}
+        
+        $fields->addFieldToTab('Root.Cache', new CheckboxField('NeverCache', _t('SimpleCache.NEVER_CACHE_THIS', 'Never cache this, regardless of opt-in settings')));
 	}
 
 	public function onAfterPublish($original) {
@@ -47,6 +50,9 @@ class SimpleCachePublisherExtension extends DataExtension {
 			$this->unpublishPages(array($oldUrl));
 		}
 		
+        if ($original->NeverCache != $this->owner->NeverCache) {
+            $this->unpublishPages(array($original->Link()));
+        }
 		
 		$this->republish($original);
 	}

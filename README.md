@@ -22,6 +22,19 @@ This module is licensed under the BSD license
 * Define cache config - use the caches.conf.sample file as a guide
 * Add the SimpleCachePublisher extension to a publishable data type and publish
   your page. 
+
+```
+Controller:
+  extensions:
+    - SimpleCacheControllerExtension
+  
+SiteTree:
+  extensions:
+    - SimpleCachePublisherExtension
+
+```
+
+
 * Change .htaccess to point to simplecache/frontend-cache.php instead of 
   framework/main.php
 * Works in a similar way to static publisher, but uses a cache abstraction

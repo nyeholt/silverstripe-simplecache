@@ -131,6 +131,10 @@ class SimpleCachePublisher {
 			return true;
 		}
         
+        if ($object->NeverCache) {
+            return false;
+        }
+        
         if ($object->SiteID && class_exists('Multisites')) {
             $site = $object->Site();
             if ($site && $site->ID && $site->DisableSiteCache) {
