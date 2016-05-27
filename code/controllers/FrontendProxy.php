@@ -323,8 +323,11 @@ class FrontendProxy {
         }
         
 		$toCache->Age = $expiry;
-        
-        $cacheableResponse = true;
+
+        // see if we've got a no cache header
+        if (isset($storedHeaders['X-SilverStripe-NoCache'])) {
+            $this->enabled = false;
+        }
         
         if (function_exists('http_response_code')) {
             $response = http_response_code();
