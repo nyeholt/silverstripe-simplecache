@@ -117,7 +117,7 @@ class FrontendProxy {
 		}
 		
 		// these are set regardless of any additional rules
-		if (strpos($fullUrl, '/admin/') === 0 || strpos($fullUrl, '/Security/') === 0 || strpos($fullUrl, '/dev/') === 0) {
+		if (strpos($fullUrl, '/admin/') !== FALSE || strpos($fullUrl, '/Security/') !== FALSE || strpos($fullUrl, '/dev/') !== FALSE) {
 			$this->enabled = false;
 			return;
 		}
