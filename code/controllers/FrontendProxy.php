@@ -117,11 +117,11 @@ class FrontendProxy {
 		}
 		
 		// these are set regardless of any additional rules
-		if (strpos($fullUrl, '/admin/') === 0 || strpos($fullUrl, '/Security/') === 0 || strpos($fullUrl, '/dev/') === 0) {
+		$dirParts = explode('/', $url);
+		if (isset($dirParts[0]) && ($dirParts[0] === 'admin' || $dirParts[0] === 'Security' || $dirParts[0] === 'dev')) {
 			$this->enabled = false;
 			return;
 		}
-
 		
 		if (!($this->cacheGetVars || $this->ignoreGetVars) && count(array_diff(array_keys($_GET), array('url'))) != 0) {
 			$this->enabled = false;
