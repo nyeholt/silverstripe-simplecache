@@ -1,5 +1,37 @@
 <?php
 
+class SimpleNullCacheStore implements SimpleCacheStore {
+    
+    public function __construct()
+    {
+    }
+    
+    public function clear()
+    {
+        
+    }
+
+    public function count()
+    {
+        return 0;
+    }
+
+    public function delete($key)
+    {
+        
+    }
+
+    public function get($key)
+    {
+        
+    }
+
+    public function store($key, $value)
+    {
+        
+    }
+}
+
 /**
  * A cache store that uses the filesystem for storing cached content
  * 
