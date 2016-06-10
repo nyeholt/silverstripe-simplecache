@@ -379,7 +379,7 @@ class FrontendProxy {
 		}
 		
         if ($this->enabled) {
-            $responseHeaders = $this->currentItem->Headers;
+            $responseHeaders = isset($this->currentItem->Headers) ? $this->currentItem->Headers : array();
             $outIfNot = function ($name, $value) use ($responseHeaders) {
                 if (!isset($responseHeaders[strtolower($name)])) {
                     header($name, $value);
