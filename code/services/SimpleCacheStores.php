@@ -56,14 +56,16 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 
 	public function store($key, $data) {
 		$location = $this->getDiskLocation($key);
-		file_put_contents($location, $data);
-		@chmod($location, 0660);
+        if ($location) {
+            file_put_contents($location, $data);
+            @chmod($location, 0660);
+        }
 	}
 
 	public function get($key) {
 		$data = null;
 		$location = $this->getDiskLocation($key, false);
-		if (is_readable($location) && is_file($location)) {
+		if ($location && is_readable($location) && is_file($location)) {
 			$data = @file_get_contents($location);
 		}
 		return $data;
@@ -71,14 +73,16 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 
 	public function delete($key) {
 		$location = $this->getDiskLocation($key);
-		if (is_readable($location) && is_file($location)) {
+		if ($location && is_readable($location) && is_file($location)) {
 			@unlink($location);
 		}
 	}
 
 	public function clear() {
 		$location = $this->getCacheLocation();
-		rrmdir($location);
+        if ($location) {
+            rrmdir($location);
+        }
 	}
 	
 	private function getCacheLocation() {
@@ -91,16 +95,23 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 				$cacheLocation = BASE_PATH . DIRECTORY_SEPARATOR . $this->location;
 			}
 		}
-		if (!is_dir($cacheLocation)) {
+		if (!is_dir($cacheLocation) && is_writable(dirname($cacheLocation))) {
 			mkdir($cacheLocation, 02770, true);
 		}
+        if (!is_writable(dirname($cacheLocation))) {
+            error_log("Configured cache directory $cacheLocation is unwriteable");
+        }
 		return $cacheLocation;
 	}
 
 	private function getDiskLocation($key, $create = true) {
 		$friendly = preg_replace('/[^A-Z0-9_-]+/i', '_', $key);
 		$name = md5($key) . $friendly;
-		$dir = rtrim($this->getCacheLocation(), '/') . '/' . mb_substr($name, 0, 3);
+        $location = $this->getCacheLocation();
+        if (!$location) {
+            return null;
+        }
+		$dir = rtrim($location, '/') . '/' . mb_substr($name, 0, 3);
 		if (!is_dir($dir) && $create) {
 			mkdir($dir, 0770, true);
 		}
@@ -108,7 +119,11 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 	}
 	
 	public function count() {
-		$glob = glob($this->getCacheLocation().'/**');
+        $location = $this->getCacheLocation();
+        if (!$location) {
+            return 0;
+        }
+		$glob = glob($location.'/**');
 		$count = 0;
 		foreach ($glob as $file) {
 			if (is_dir($file)) {
