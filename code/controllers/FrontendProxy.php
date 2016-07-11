@@ -304,19 +304,13 @@ class FrontendProxy {
 		// check headers to see if we have an expires header
 		$headers = headers_list();
 		if ($headerExpiry = $this->ageFromHeaders($headers, $expiry)) {
-			if ($headerExpiry < $expiry) {
+			if ($headerExpiry < $expiry && $headerExpiry != 0) {
 				$expiry = $headerExpiry;
 			}
 		}
+
+        $storedHeaders = $this->headersToStore($headers);
         
-        $storedHeaders = array();
-        // store the headers as k => v
-        foreach ($headers as $header) {
-            $parts = explode(':', $header, 2);
-            if (count($parts) == 2) {
-                $storedHeaders[strtolower($parts[0])] = $parts[1];
-            }
-        }
         if (count($storedHeaders)) {
             $toCache->Headers = $storedHeaders;
         }
@@ -360,6 +354,29 @@ class FrontendProxy {
 		
 		return $minAge;
 	}
+    
+    /**
+     * Return an array of headers to save based on a set of headers returned by
+     * SS
+     * 
+     * @param array $input
+     */
+    protected function headersToStore($inputHeaders) {
+        $storedHeaders = array();
+        // store the headers as k => v
+        foreach ($inputHeaders as $header) {
+            $parts = explode(':', $header, 2);
+            if (count($parts) == 2) {
+                $storedHeaders[strtolower($parts[0])] = trim($parts[1]);
+            }
+        }
+        
+        // leave this off if it is a default return value
+        if (isset($storedHeaders['expires']) && $storedHeaders['expires'] == 'Thu, 19 Nov 1981 08:52:00 GMT') {
+            unset($storedHeaders['expires']);
+        }
+        return $storedHeaders;
+    }
 	
     /**
      * Serve the content item wrapped by the proxy. 
