@@ -112,8 +112,12 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
             return null;
         }
 		$dir = rtrim($location, '/') . '/' . mb_substr($name, 0, 3);
-		if (!is_dir($dir) && $create) {
-			mkdir($dir, 0770, true);
+		if (!is_dir($dir) && is_writable(dirname($dir)) && $create) {
+			@mkdir($dir, 0770, true);
+            
+            if (!file_exists($dir) && !is_dir($dir)) {
+                return false;
+            }
 		}
 		return $dir . '/' . $name;
 	}
