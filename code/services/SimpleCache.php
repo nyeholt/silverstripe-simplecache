@@ -206,6 +206,8 @@ class SimpleCache {
 	 * @param mixed $value
 	 * @param int $expiry
 	 * 			How many seconds to cache this object for (no value uses the configured default)
+     * @param array $tags
+     *          Any tags to flag this item has
 	 */
 	public function store($key, $value, $expiry = -1, $tags = null) {
 		if ($expiry == -1) {
