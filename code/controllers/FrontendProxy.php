@@ -90,7 +90,7 @@ class FrontendProxy {
      *
      * @var array
      */
-    protected $ignoreHeaders = array();
+    protected $storeHeaders = array('expires', 'pragma', 'cache-control', 'content-type', 'vary', 'etag');
 	
 	public function __construct(
 		$staticCache = null, $dynamicCache = null, 
@@ -363,15 +363,22 @@ class FrontendProxy {
      */
     protected function headersToStore($inputHeaders) {
         $storedHeaders = array();
+        $normalised = array();
         // store the headers as k => v
         foreach ($inputHeaders as $header) {
             $parts = explode(':', $header, 2);
             if (count($parts) == 2) {
-                $storedHeaders[strtolower($parts[0])] = trim($parts[1]);
+                $normalised[strtolower($parts[0])] = trim($parts[1]);
             }
         }
         
-        // leave this off if it is a default return value
+        foreach ($this->storeHeaders as $canStore) {
+            if (isset($normalised[$canStore])) {
+                $storedHeaders[$canStore] = $normalised[$canStore];
+            }
+        }
+        
+        // leave this off if it is a default return value by the framework
         if (isset($storedHeaders['expires']) && $storedHeaders['expires'] == 'Thu, 19 Nov 1981 08:52:00 GMT') {
             unset($storedHeaders['expires']);
         }
