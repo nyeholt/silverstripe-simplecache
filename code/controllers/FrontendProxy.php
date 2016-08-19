@@ -90,7 +90,7 @@ class FrontendProxy {
      *
      * @var array
      */
-    protected $storeHeaders = array('expires', 'pragma', 'cache-control', 'content-type', 'vary', 'etag');
+    protected $storeHeaders = array('expires', 'pragma', 'cache-control', 'content-type', 'vary', 'etag', 'x-frame-options');
 	
 	public function __construct(
 		$staticCache = null, $dynamicCache = null, 
