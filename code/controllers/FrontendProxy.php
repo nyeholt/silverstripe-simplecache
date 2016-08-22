@@ -5,9 +5,26 @@
  * @license BSD License http://www.silverstripe.org/bsd-license
  */
 class FrontendProxy {
+    /**
+     * SERVER vars to disable/enable based upon
+     *
+     * @var array
+     */
 	protected $server;
+    
+    /**
+     * ENV vars to take into account
+     *
+     * @var array
+     */
 	protected $env;
 
+    /**
+     * 
+     * A list of cookies to bypass caching if present
+     *
+     * @var array
+     */
 	protected $bypassCookies = array();
 	
 	/**
@@ -95,7 +112,8 @@ class FrontendProxy {
 	public function __construct(
 		$staticCache = null, $dynamicCache = null, 
 		$urlRules = null, $bypassCookies = array(),
-		$serverVars = null, $envVars = null
+		$serverVars = null, $envVars = null,
+        $storeHeaders = null
 	) {
 
 		$this->server = $serverVars ? $serverVars : $_SERVER;
@@ -104,6 +122,10 @@ class FrontendProxy {
 		$this->dynamicCache = $dynamicCache;
 		$this->urlRules = $urlRules;
 		$this->bypassCookies = $bypassCookies;
+
+        if ($storeHeaders) {
+            $this->storeHeaders = $storeHeaders;
+        }
 	}
 	
 	public function checkIfEnabled($host, $url) {
