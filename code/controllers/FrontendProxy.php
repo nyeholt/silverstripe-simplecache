@@ -108,6 +108,13 @@ class FrontendProxy {
      * @var array
      */
     protected $storeHeaders = array('expires', 'pragma', 'cache-control', 'content-type', 'vary', 'etag', 'x-frame-options');
+    
+    /**
+     * Should X-SilverStripe-Cache headers be output?
+     *
+     * @var boolean
+     */
+    protected $includeCacheHeaders = true;
 	
 	public function __construct(
 		$staticCache = null, $dynamicCache = null, 
@@ -127,6 +134,10 @@ class FrontendProxy {
             $this->storeHeaders = $storeHeaders;
         }
 	}
+    
+    public function setIncludeCacheHeaders($v) {
+        $this->includeCacheHeaders = $v;
+    }
 	
 	public function checkIfEnabled($host, $url) {
 		$fullUrl = "$host/$url";
@@ -175,15 +186,15 @@ class FrontendProxy {
 
 		if ($this->staticCache) {
 			$this->currentItem = $this->staticCache->get($key);
-			if ($this->currentItem && strlen($this->currentItem->Content)) {
-				$this->headers[] = 'X-SilverStripe-Cache: hit at '.@date('r');
+			if ($this->currentItem && strlen($this->currentItem->Content) && $this->includeCacheHeaders) {
+				$this->headers[] = 'X-SilverStripe-Cache: hit at ' . date('r');
 			} 
 		}
 
 		if (!$this->currentItem && $this->dynamicCache && $this->canCache($host, $url)) {
 			$this->currentItem = $this->dynamicCache->get($key);
-			if ($this->currentItem && strlen($this->currentItem->Content)) {
-				$this->headers[] = 'X-SilverStripe-Cache: gen-hit at '.@date('r');
+			if ($this->currentItem && strlen($this->currentItem->Content) && $this->includeCacheHeaders) {
+				$this->headers[] = 'X-SilverStripe-Cache: gen-hit at ' . date('r');
 			}
 		}
         
@@ -353,7 +364,10 @@ class FrontendProxy {
 		if ($this->enabled && $this->dynamicCache && strlen($toCache->Content)) {
 			$tags = isset($config['tags']) ? $config['tags'] : null;
 			$this->dynamicCache->store($key, $toCache, $expiry, $tags);
-			$this->headers[] = 'X-SilverStripe-Cache: miss-gen at '.@date('r') . ' on ' . $key;
+            if ($this->includeCacheHeaders) {
+                $this->headers[] = 'X-SilverStripe-Cache: miss-gen at '. date('r');
+            }
+			
 		}
 
 		$this->currentItem = $toCache;
