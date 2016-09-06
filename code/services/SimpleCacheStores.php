@@ -335,7 +335,14 @@ class RedisBasedCacheStore implements SimpleCacheStore {
 	}
 
 	public function get($key) {
-		return $this->cache->get($this->name.'-'.$key);
+        $data = null;
+        try {
+            $data = $this->cache->get($this->name.'-'.$key);
+        } catch (Predis\Connection\ConnectionException $ex) {
+            error_log($ex->getMessage());
+        }
+        return $data;
+		
 	}
 
 	public function delete($key) {
