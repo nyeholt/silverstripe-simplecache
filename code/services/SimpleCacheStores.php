@@ -95,7 +95,7 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 				$cacheLocation = BASE_PATH . DIRECTORY_SEPARATOR . $this->location;
 			}
 		}
-		if (!is_dir($cacheLocation)) {
+		if (!is_dir($cacheLocation) && is_writable(dirname($cacheLocation))) {
 			mkdir($cacheLocation, 02770, true);
 		}
         if (!is_writable(dirname($cacheLocation))) {
@@ -113,10 +113,10 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
             return null;
         }
 		$dir = rtrim($location, '/') . '/' . mb_substr($name, 0, 3);
-		if (!is_dir($dir) && $create) {
+		if (!is_dir($dir) && is_writable(dirname($dir)) && $create) {
 			@mkdir($dir, 0770, true);
 		}
-        
+
         if (!file_exists($dir) && !is_dir($dir)) {
             return false;
         }
