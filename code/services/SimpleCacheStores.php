@@ -99,6 +99,7 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 			mkdir($cacheLocation, 02770, true);
 		}
         if (!is_writable(dirname($cacheLocation))) {
+            $cacheLocation = null;
             error_log("Configured cache directory $cacheLocation is unwriteable");
         }
 		return $cacheLocation;
@@ -114,11 +115,11 @@ class SimpleFileBasedCacheStore implements SimpleCacheStore {
 		$dir = rtrim($location, '/') . '/' . mb_substr($name, 0, 3);
 		if (!is_dir($dir) && is_writable(dirname($dir)) && $create) {
 			@mkdir($dir, 0770, true);
-            
-            if (!file_exists($dir) && !is_dir($dir)) {
-                return false;
-            }
 		}
+        
+        if (!file_exists($dir) && !is_dir($dir)) {
+            return false;
+        }
 		return $dir . '/' . $name;
 	}
 	
