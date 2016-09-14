@@ -36,13 +36,8 @@ class SimpleCachePublisherExtension extends DataExtension {
 	}
 
 	public function onAfterPublish($original) {
-        $dynamicCache = SimpleCache::get_cache('DynamicPublisherCache');
-        if ($dynamicCache) {
-            $absolute = $this->owner->AbsoluteLink();
-            $parts = parse_url($absolute);
-            $key = trim($parts['host'] . $parts['path'], '/');
-            $dynamicCache->delete($key);
-        }
+        $this->cachePublisher->clearDynamicCacheFor($this->owner);
+
 		// if it's versioned, let's check its old URL
 		if (strlen($original->URLSegment) && strlen($this->owner->URLSegment) && 
 			$original->URLSegment != $this->owner->URLSegment) {

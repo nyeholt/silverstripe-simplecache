@@ -118,6 +118,38 @@ class SimpleCachePublisher {
             Config::inst()->update('Director', 'alternate_base_url', $currentBase);
 		}
 	}
+    
+    /**
+     * Clears the dynamic cached data for a particular data object
+     * @param DataObject $object
+     */
+    public function clearDynamicCacheFor(DataObject $object) {
+        $dynamicCache = SimpleCache::get_cache('DynamicPublisherCache');
+        if ($dynamicCache) {
+            $clearUrls = array($object->Link());
+            if ($object->hasMethod('pagesAffectedByChanges')) {
+                $affectedUrls = $object->pagesAffectedByChanges();
+                if (count($affectedUrls)) {
+                    foreach ($affectedUrls as $afUrl) {
+                        $clearUrls[] = $afUrl;
+                    }
+                }
+            }
+
+            $clearUrls = array_unique($clearUrls);
+            
+            $baseUrl = $object->SiteID ? $object->Site()->getUrl(): Director::absoluteBaseURL();
+
+            foreach ($clearUrls as $absolute) {
+                if (strpos($absolute, '://') === false) {
+                    $absolute = $baseUrl . '/' . trim($absolute, '/');
+                }
+                $parts = parse_url($absolute);
+                $key = trim($parts['host'] . $parts['path'], '/');
+                $dynamicCache->delete($key);
+            }
+        }
+    }
 	
 	/**
 	 * Indicate whether we "don't" cache the given object
