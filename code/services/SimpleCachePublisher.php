@@ -145,7 +145,9 @@ class SimpleCachePublisher {
                     $absolute = $baseUrl . '/' . trim($absolute, '/');
                 }
                 $parts = parse_url($absolute);
-                $key = trim($parts['host'] . $parts['path'], '/');
+                $host = $parts['host'];
+                $path = $parts['path'] == '/' ? '/index' : $parts['path'];
+                $key = trim($parts['host'] . $path, '/');
                 $dynamicCache->delete($key);
             }
         }
