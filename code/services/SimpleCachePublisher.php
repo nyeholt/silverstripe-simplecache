@@ -91,26 +91,28 @@ class SimpleCachePublisher {
 			if (!$specificUrls) {
 				$specificUrls = array();
 				if ($object->hasMethod('pagesAffectedByChanges')) {
-					$pageUrls = $object->pagesAffectedByChanges();
-					foreach ($pageUrls as $url) {
-						if (Director::is_relative_url($url)) {
-							$url = Director::absoluteURL($url);
-						}
-						$specificUrls[] = $url;
-					}
+					$specificUrls = $object->pagesAffectedByChanges();
 				} else {
 					$specificUrls = array($object->AbsoluteLink());
 				}
 			}
+            
+            $regenUrls = array();
+            foreach ($specificUrls as $url) {
+                if (Director::is_relative_url($url)) {
+                    $url = Director::absoluteURL($url);
+                }
+                $regenUrls[] = $url;
+            }
 
-			if (count($specificUrls)) {
-				$object->extend('updateAffectedPages', $specificUrls);
+			if (count($regenUrls)) {
+				$object->extend('updateAffectedPages', $regenUrls);
 				
-				if (class_exists('AbstractQueuedJob') && $this->jobThreshold && count($specificUrls) >= $this->jobThreshold) {
-					$job = new SimpleCachePublishingJob($object, $specificUrls);
+				if (class_exists('AbstractQueuedJob') && $this->jobThreshold && count($regenUrls) >= $this->jobThreshold) {
+					$job = new SimpleCachePublishingJob($object, $regenUrls);
 					singleton('QueuedJobService')->queueJob($job);
 				} else {
-					$this->publishUrls($specificUrls);
+					$this->publishUrls($regenUrls);
 				}
 			}
 
@@ -282,12 +284,12 @@ class SimpleCachePublisher {
 			singleton('DataObject')->flushCache();
 
 			$contentType = null;
-			// Generate file content			
+            $content = null;
+			// Generate file content
 			if(is_object($response)) {
 				if($response->getStatusCode() == '301' || $response->getStatusCode() == '302') {
 					$absoluteURL = Director::absoluteURL($response->getHeader('Location'));
-					$content = null;
-				} else {
+				} else if ($response->getStatusCode () >= 200 && $response->getStatusCode() < 300) {
 					$content = $response->getBody();
 					$type = $response->getHeader('Content-type');
 					$contentType = $type ? $type : $contentType;
@@ -372,6 +374,51 @@ class SimpleCachePublisher {
 		}
 	}
 
+    /**
+     * 
+     * @param type $page
+     * @return array 
+     *          The list of urls unpublished
+     */
+    public function unpublishObject($page) {
+        if($page->hasMethod('pagesAffectedByUnpublishing')) {
+			$urls = $page->pagesAffectedByUnpublishing();
+			$urls = array_unique($urls);
+		} else {
+			$urls = array($page->Link());
+		}
+		
+		array_walk($urls, function (&$entry) {
+			$entry = preg_replace('{(.+?)://(.+?)/}i', '', $entry);
+		});
+
+        $siteHost = $host = Director::protocolAndHost();
+        if ($page->SiteID && class_exists('Multisites')) {
+            // prefix is different
+            $host = $page->Site()->getUrl();
+        }
+        $mappedUrls = array();
+        // now create a list of multi-hosts
+        foreach ($urls as $path) {
+            if ($host != $siteHost) {
+                $mappedUrls[] = $siteHost . '' . $path;
+            }
+            $mappedUrls[] = $host . '' . $path;
+        }
+        
+		// immediately unpublish
+		$this->unpublishUrls($mappedUrls);
+        
+        $repub = array();
+		if ($page->hasMethod('pagesAffectedByChanges')) {
+			$repub = $page->pagesAffectedByChanges();
+			$repub = array_diff($repub, $urls);
+			if (count($repub)) {
+				$this->publishDataObject($page, $repub);
+			}
+		}
+    }
+    
 	/**
 	 * Unpublish a list of URLs
 	 * 
