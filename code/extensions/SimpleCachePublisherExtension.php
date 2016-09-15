@@ -93,6 +93,8 @@ class SimpleCachePublisherExtension extends DataExtension {
 	 */
 	function onAfterUnpublish($page) {
 		// Get the affected URLs
+        $this->cachePublisher->clearDynamicCacheFor($this->owner);
+        
 		if($this->owner->hasMethod('pagesAffectedByUnpublishing')) {
 			$urls = $this->owner->pagesAffectedByUnpublishing();
 			$urls = array_unique($urls);
