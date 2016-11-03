@@ -43,7 +43,14 @@ SiteTree:
 
 
 
-## Configuration
+### On-request page caching
+
+To use this module in a cache-on-request manner, please review the [GitHub Wiki](http://wiki.github.com/nyeholt/silverstripe-simplecache) - in short
+
+* create a {project}/caches.conf.php based on simplecache/caches.conf.php
+* add appropriate _ss_environment.php configuration pointing at {project}/caches.conf.php
+* update your .htaccess file with `RewriteRule .* simplecache/frontend-cache.php?url=%1&%{QUERY_STRING} [L]`
+* ensure the top level directories exist for the configured cache locations
 
 
 
