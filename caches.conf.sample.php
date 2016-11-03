@@ -37,3 +37,10 @@ SimpleCache::$cache_configs = array(
         )
     ),
 );
+
+$PROXY_CACHE_URLS = array(
+	'news/(\d+)/.*?$'	=> array(
+		'default'	=> 7200,
+		'tags'		=> array('news', 1),
+	)
+);
