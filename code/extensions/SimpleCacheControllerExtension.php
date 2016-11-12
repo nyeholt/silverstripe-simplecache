@@ -5,7 +5,7 @@
  */
 class SimpleCacheControllerExtension extends Extension
 {
-    public function onAftereInit() {
+    public function onAfterInit() {
         if ($this->owner->NeverCache) {
             $res = $this->owner->getResponse();
             if ($res) {
