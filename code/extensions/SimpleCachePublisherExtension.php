@@ -45,7 +45,7 @@ class SimpleCachePublisherExtension extends DataExtension {
 			$this->unpublishPages(array($oldUrl));
 		}
 		
-        if ($original->NeverCache != $this->owner->NeverCache) {
+        if (($original->NeverCache != $this->owner->NeverCache) || $this->owner->NeverCache) {
             $this->unpublishPages(array($original->Link()));
         }
 		

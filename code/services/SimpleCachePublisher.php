@@ -169,7 +169,7 @@ class SimpleCachePublisher {
 		}
         
         if ($object->NeverCache) {
-            return false;
+            return true;
         }
         
         if ($object->SiteID && class_exists('Multisites')) {
