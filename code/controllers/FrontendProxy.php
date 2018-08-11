@@ -182,8 +182,12 @@ class FrontendProxy {
 		}
 		
 		$url = $this->urlForCaching($url);
-		
-		$key = "$host/$url";
+        
+        $prefix = '';
+        if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
+            $prefix = $_SERVER['HTTP_X_FORWARDED_HOST'];
+        }
+		$key = "{$prefix}$host/$url";
 
 		if ($this->staticCache) {
 			$this->currentItem = $this->staticCache->get($key);
@@ -317,9 +321,14 @@ class FrontendProxy {
 	}
 
 	public function generateCache($host, $url) {
-		$url = $this->urlForCaching($url);
-		$key = "$host/$url";
-		define('PROXY_CACHE_GENERATING', true);
+        $url = $this->urlForCaching($url);
+        $prefix = '';
+        if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
+            $prefix = $_SERVER['HTTP_X_FORWARDED_HOST'];
+        }
+		$key = "{$prefix}$host/$url";
+        
+        define('PROXY_CACHE_GENERATING', true);
 		
 		$config = $this->configForUrl($url, $host);
 		$expiry = isset($config['expiry']) ? $config['expiry'] : -1;
