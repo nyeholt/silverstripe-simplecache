@@ -140,7 +140,7 @@ class SimpleCachePublisher {
 
             $clearUrls = array_unique($clearUrls);
             
-            $baseUrl = $object->SiteID ? $object->Site()->getUrl(): Director::absoluteBaseURL();
+            $baseUrl = trim($object->SiteID ? $object->Site()->getUrl(): Director::absoluteBaseURL(), '/');
 
             foreach ($clearUrls as $absolute) {
                 if (strpos($absolute, '://') === false) {
