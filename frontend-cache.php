@@ -7,11 +7,6 @@ require_once($framework . '/core/Constants.php');
 require_once 'control/injector/Injector.php';
 
 
-// IIS will sometimes generate this.
-if(!empty($_SERVER['HTTP_X_ORIGINAL_URL'])) {
-	$_SERVER['REQUEST_URI'] = $_SERVER['HTTP_X_ORIGINAL_URL'];
-}
-
 /**
  * Figure out the request URL
  */
