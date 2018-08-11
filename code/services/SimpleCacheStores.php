@@ -307,7 +307,10 @@ class SimpleMemcachedBasedCacheStore implements SimpleCacheStore {
  *
  */
 class RedisBasedCacheStore implements SimpleCacheStore {
-	protected $config = null;
+	protected $config = [
+        'timeout' => 2.0,
+        'read_write_timeout' => 2.0
+    ];
 	
 	protected $cache;
 	
@@ -315,9 +318,17 @@ class RedisBasedCacheStore implements SimpleCacheStore {
 	
 	public function __construct($name = 'default', $config = null) {
 		if ($config) {
-			$this->config = $config;
+            if (count($config) === 1 && isset($config[0])) {
+                $parts = parse_url($config[0]);
+                $config = [
+                    'scheme'   => isset($parts['scheme']) ? $parts['scheme'] : 'tcp',
+                    'host'     => isset($parts['host']) ? $parts['host'] : '127.0.0.1',
+                    'port'     => isset($parts['port']) ? $parts['port'] : 6379,
+                ];
+            }
+            $this->config = array_merge($this->config, $config);
 		}
-		
+
 		if (!class_exists('Predis\Client')) {
 			require_once BASE_PATH . '/vendor/predis/predis/src/Autoloader.php';
 			Predis\Autoloader::register();
@@ -328,9 +339,13 @@ class RedisBasedCacheStore implements SimpleCacheStore {
 	}
 
 	public function store($key, $data, $expiry = null) {
-		$this->cache->set($this->name.'-'.$key, $data);
-        if ($expiry > 0) {
-            $this->cache->expire($this->name.'-'.$key, $expiry);
+        try {
+            $this->cache->set($this->name.'-'.$key, $data);
+            if ($expiry > 0) {
+                $this->cache->expire($this->name.'-'.$key, $expiry);
+            }
+        } catch (\Exception $ex) {
+            error_log($ex->getMessage());
         }
 	}
 
